@@ -1,64 +1,16 @@
-#ifndef BOMBERMAN_H_
-#define BOMBERMAN_H_
+//1.Iniciar jogo
 
-#include "raylib.h" // Essencial, pois nossas structs usam Vector2
+//Escolher quantos jogadores irão participar (1: 1 player x 3 bots) (2: 2 players x 2 bots) (3: 3 players x 1 bot) (4: 4 players)
 
-// --- Constantes do Jogo (#defines) ---
-#define MAP_LARGURA 15
-#define MAP_ALTURA 11
-#define TAMANHO_TILE 40 // 40 pixels por quadrado
+//2.Execução da partida (mapa 13 x 15)
 
-// Janela (derivada dos #defines)
-const int screenWidth = MAP_LARGURA * TAMANHO_TILE;
-const int screenHeight = MAP_ALTURA * TAMANHO_TILE;
+//Conseguir receber as  teclas para movimento e para colocar as bombas
 
-// --- Enums do Mapa (Matriz) ---
-typedef enum {
-    TILE_VAZIO = 0,
-    TILE_PAREDE_FIXA,
-    TILE_PAREDE_MACIA
-} TipoTile;
+//Ter paredes destrutíveis
 
-// --- Structs ---
-typedef struct {
-    Vector2 pos; // Posição em PIXELS
-    float velocidade;
-    int poder_explosao;
-    int max_bombas;
-    int bombas_plantadas;
-} Jogador;
+//Gerar itens que, ao serem colotados, aumentam o tamanho da explosão
 
-typedef struct {
-    Vector2 pos_grid; // Posição na GRADE
-    float timer;
-    int poder;
-} Bomba;
+//Reiniciar o mapa ao jogar novamente
 
-typedef struct {
-    Vector2 pos_grid; // Posição na GRADE
-    float timer;      // Duração da explosão
-} Explosao;
+//
 
-
-// --- Listas Encadeadas (Structs de Nó) ---
-typedef struct NodeBomba {
-    Bomba bomba;
-    struct NodeBomba* proximo;
-} NodeBomba;
-
-typedef struct NodeExplosao {
-    Explosao explosao;
-    struct NodeExplosao* proximo;
-} NodeExplosao;
-
-// --- Protótipos de Funções ---
-// "Promessas" das funções que estarão em bomberman.c
-void InitGame(void);
-void UpdateGame(void);
-void DrawGame(void);
-void UnloadGame(void);
-void PlantarBomba(Vector2 pos_grid);
-void CriarExplosoes(Vector2 pos_grid, int poder);
-void DesenharMapa(void);
-
-#endif // BOMBERMAN_H_
