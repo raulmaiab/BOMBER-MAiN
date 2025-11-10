@@ -6,8 +6,8 @@
 // Ajuste estes valores para que sejam EXATAMENTE
 // a largura e altura da sua imagem "inicio.png"
 // (Exemplo: se a imagem for 1280x720)
-const int SCREEN_WIDTH = 1280;
-const int SCREEN_HEIGHT = 720;
+const int SCREEN_WIDTH = 1440;
+const int SCREEN_HEIGHT = 900;
 // (Se sua imagem for 800x600, use 800 e 600)
 
 int main(void)
@@ -15,10 +15,11 @@ int main(void)
     // 1. Inicialização
     // A janela agora será criada com o tamanho exato da sua imagem.
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "BomberMain");
+
+    ToggleFullscreen();
+
     SetTargetFPS(60);
 
-    // 2. Chamar a Tela de Início
-    // Esta função só retorna quando o usuário pressiona Enter ou fecha a janela.
     bool deveContinuar = ExecutarTelaInicio();
 
     // 3. Se o usuário não fechou a janela, prossiga
