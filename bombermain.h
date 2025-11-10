@@ -1,47 +1,61 @@
 #ifndef BOMBERMAN_H_
 #define BOMBERMAN_H_
+
+#include "raylib.h" 
+
+// --- Constantes Virtuais e de Mapa ---
+// (Removemos JANELA_LARGURA e JANELA_ALTURA)
+
 #define MAP_LARGURA 15
 #define MAP_ALTURA 13
 #define TAMANHO_TILE 40
-#include "raylib.h" 
 
-
-//Definindo jogadores, bombas e telas
+// Esta é a resolução INTERNA do seu jogo
+#define VIRTUAL_LARGURA (MAP_LARGURA * TAMANHO_TILE) // 600
+#define VIRTUAL_ALTURA (MAP_ALTURA * TAMANHO_TILE) // 520
 
 #define SPRITE_LARGURA 16 
 #define SPRITE_ALTURA 24
 
+// --- Structs e Enums ---
+
+// Telas e Cores
 typedef enum {
-    BOMBERMAN_BRANCO = 0, // Primeiro jogador na primeira linha
-    BOMBERMAN_PRETO,      // Segundo jogador na segunda linha
-    BOMBERMAN_AZUL,       // Terceiro jogador na terceira linha
-    BOMBERMAN_VERMELHO,   // Quarto jogador na quarta linha
-    NUM_BOMBERMAN_CORES   // Ajuda a saber quantas cores temos
+    TELA_MENU,
+    TELA_JOGO,
+    TELA_FIM
+} Tela;
+
+typedef enum {
+    BOMBERMAN_BRANCO = 0,
+    BOMBERMAN_PRETO,
+    BOMBERMAN_AZUL,
+    BOMBERMAN_VERMELHO,
+    NUM_BOMBERMAN_CORES
 } BombermanCor;
+
+// --- Entidades do Jogo (Dados) ---
 
 typedef struct {
     Vector2 posicao;
     Texture2D boneco_sprite;
     BombermanCor cor;
-    int vida ;
+    int vida;
     int poder_bomba;
     int max_bombas;
     int bombas_plantadas;
     bool bot;
-
-    int frame_atual;        
-    float frame_timer;       
+    // Animação
+    int frame_atual;
+    float frame_timer;
     Vector2 direcao_olhando;
-    
-
-}Jogador;
+} Jogador;
 
 typedef struct {
-    Vector2 posicao_bomba;
-    Texture2D bomba;
+    Vector2 posicao_bomba; // Posição no GRID
     int poder;
     float temporizador;
-}Bomba;
+} Bomba;
 
 typedef struct {
     Vector2 pos_grid;
@@ -50,8 +64,10 @@ typedef struct {
 
 typedef struct {
     Vector2 pos_grid;
-    int tipo; 
+    int tipo; // 0 = +bomba, 1 = +poder
 } Item;
+
+// --- Nós das Listas Encadeadas (Para malloc/free) ---
 
 typedef struct NodeBomba {
     Bomba bomba;
@@ -68,43 +84,30 @@ typedef struct NodeItem {
     struct NodeItem* proximo;
 } NodeItem;
 
-typedef enum {
-    TELA_MENU,
-    TELA_JOGO,
-    TELA_FIM
-} Tela;
 
-//1. Funções de começo
-void IniciarJogo(void);     //Carrega texturas, inicializa Raylib
+// --- Protótipos de Funções (O "Contrato") ---
 
-void AtualizarJogo(void);   //Atualiza 1 frame
+// Funções de Gerenciamento
+void IniciarJogo(void);
+void AtualizarJogo(void);
+void DesenharJogo(void);
+void FinalizarJogo(void);
 
-void DesenharJogo(void);    //Desenha 1 frame
-
-void FinalizarJogo(void);   //Libera memória (free)
-
-//2. Funções das telas
-
-//Menu:
+// Funções das Telas
 void AtualizarTelaMenu(void);
 void DesenharTelaMenu(void);
-
-//Partida:
 void AtualizarTelaJogo(void);
 void DesenharTelaJogo(void);
-
-//Tela_Final:
 void AtualizarTelaFim(void);
 void DesenharTelaFim(void);
 
-
-//Funções do bombermain.c
-void ReiniciarMapa(void);                         // Limpa o mapa e coloca os blocos 
-void ProcessarTecla(void);                        // Recebe as teclas (W,A,S,D, Espaço)
-void AtualizarMovimento(void);                    // Move jogadores e verifica colisões
-void PlantarBomba(int id_jogador);                // Cria uma nova bomba (com malloc)
-void AtualizarBombas(float dt);                   // Atualiza timers e explode
-void CriarExplosao(Vector2 pos_grid, int poder);  // Cria a explosão
-void GerarItem(Vector2 pos_grid);                 // Gera itens ao quebrar paredes
+// Funções de Lógica da Partida
+void ReiniciarMapa(void);
+void ProcessarTecla(void);
+void AtualizarMovimento(void);
+void PlantarBomba(int id_jogador);
+void AtualizarBombas(float dt);
+void CriarExplosao(Vector2 pos_grid, int poder);
+void GerarItem(Vector2 pos_grid);
 
 #endif // BOMBERMAN_H_

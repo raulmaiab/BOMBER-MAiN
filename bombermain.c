@@ -1,6 +1,6 @@
 #include "bombermain.h"  // O seu cabeçalho
 #include <stdlib.h>     // Para malloc, free, rand
-#include <math.h>       // Para roundf (colisão)
+#include <math.h>       // Para roundf, fminf
 #include <stdio.h>      // Para printf (debug)
 
 // --- Variáveis Globais ---
@@ -8,20 +8,22 @@ Tela g_tela_atual;
 int g_mapa[MAP_ALTURA][MAP_LARGURA];
 Jogador g_jogadores[4];
 
-// Listas Encadeadas (começam vazias)
+// Listas Encadeadas
 NodeBomba* g_lista_bombas = NULL;
 NodeExplosao* g_lista_explosoes = NULL;
 NodeItem* g_lista_itens = NULL;
 
 // Texturas Globais
-Texture2D g_spritesheet_personagens;
+Texture2D g_textura_tela_inicio; 
 Texture2D g_sprite_bomba;
 Texture2D g_sprite_parede_fixa;
 Texture2D g_sprite_parede_macia;
-// ... (outras texturas que você precisar) ...
 
-// Array "mágico" para os offsets Y do spritesheet
-const int Y_OFFSET_COR[] = { 0, 80, 160, 240 };
+// --- Variáveis de Escala (O "Canvas Virtual") ---
+RenderTexture2D g_canvas_virtual; // O canvas interno de 600x520
+Rectangle g_canvas_origem;      // Onde cortar do canvas
+Rectangle g_canvas_destino;     // Onde desenhar na tela (com barras pretas)
+float g_escala;                 // O fator de zoom
 
 
 // --- Função Principal ---
@@ -42,31 +44,74 @@ int main(void) {
 
 // 1. Funções de Gerenciamento
 void IniciarJogo(void) {
-    InitWindow(MAP_LARGURA * TAMANHO_TILE, MAP_ALTURA * TAMANHO_TILE, "Bomberman");
+    
+    // --- CORREÇÃO DE TELA (Adaptável) ---
+    
+    int monitor = GetCurrentMonitor();
+    int largura_tela = GetMonitorWidth(monitor);
+    int altura_tela = GetMonitorHeight(monitor);
+
+    InitWindow(largura_tela, altura_tela, "Bomberman");
+    ToggleFullscreen(); // Usa o modo tela cheia "borderless"
+    
     SetTargetFPS(60);
 
-    // --- Carregar Sprites ---
-    // (Lembre de renomear seu arquivo para 'personagens.png')
-    g_spritesheet_personagens = LoadTexture("personagens.png"); 
-    // g_sprite_bomba = LoadTexture("bomba.png");
-    // g_sprite_parede_macia = LoadTexture("parede_macia.png");
-    // ... carregar todas as suas texturas ...
+    g_canvas_virtual = LoadRenderTexture(VIRTUAL_LARGURA, VIRTUAL_ALTURA);
+    SetTextureFilter(g_canvas_virtual.texture, TEXTURE_FILTER_POINT);
 
-    // Configurar jogadores
+    g_escala = fminf((float)largura_tela / VIRTUAL_LARGURA, (float)altura_tela / VIRTUAL_ALTURA);
+
+    // --- CORRIGIDO: g_canvas_origem.height estava negativo ---
+    // Onde vamos "recortar" do nosso canvas (a imagem inteira)
+    g_canvas_origem = (Rectangle){ 0.0f, 0.0f, (float)VIRTUAL_LARGURA, (float)VIRTUAL_ALTURA };
+    // Onde vamos "desenhar" o canvas na tela (centralizado)
+    g_canvas_destino = (Rectangle){
+        ((float)largura_tela - ((float)VIRTUAL_LARGURA * g_escala)) / 2.0f,
+        ((float)altura_tela - ((float)VIRTUAL_ALTURA * g_escala)) / 2.0f,
+        (float)VIRTUAL_LARGURA * g_escala,
+        (float)VIRTUAL_ALTURA * g_escala
+    };
+    
+    // --- Fim da Correção ---
+
+    // --- Carregar Sprites ---
+    g_textura_tela_inicio = LoadTexture("inicio.png"); 
+    Texture2D tex_branco = LoadTexture("SpriteBranco.png");
+    Texture2D tex_preto = LoadTexture("SpritePreto.png");
+    Texture2D tex_azul = LoadTexture("SpriteAzul.png");
+    Texture2D tex_vermelho = LoadTexture("SpriteVermelho.png");
+    
+    // ...
+
+    // --- Configurar Jogadores ---
+    g_jogadores[0].boneco_sprite = tex_branco;
+    g_jogadores[0].cor = BOMBERMAN_BRANCO;
+    g_jogadores[0].posicao = (Vector2){ TAMANHO_TILE * 1.5f, TAMANHO_TILE * 1.5f };
+
+    g_jogadores[1].boneco_sprite = tex_preto;
+    g_jogadores[1].cor = BOMBERMAN_PRETO;
+    g_jogadores[1].posicao = (Vector2){ TAMANHO_TILE * (MAP_LARGURA - 1.5f), TAMANHO_TILE * 1.5f };
+
+    g_jogadores[2].boneco_sprite = tex_azul;
+    g_jogadores[2].cor = BOMBERMAN_AZUL;
+    g_jogadores[2].posicao = (Vector2){ TAMANHO_TILE * 1.5f, TAMANHO_TILE * (MAP_ALTURA - 1.5f) };
+
+    g_jogadores[3].boneco_sprite = tex_vermelho;
+    g_jogadores[3].cor = BOMBERMAN_VERMELHO;
+    g_jogadores[3].posicao = (Vector2){ TAMANHO_TILE * (MAP_LARGURA - 1.5f), TAMANHO_TILE * (MAP_ALTURA - 1.5f) };
+
+    // Configurações padrão para todos
     for (int i = 0; i < 4; i++) {
-        g_jogadores[i].boneco_sprite = g_spritesheet_personagens;
-        g_jogadores[i].cor = (BombermanCor)i; // Branco, Preto, Azul, Vermelho
-        g_jogadores[i].posicao = (Vector2){ TAMANHO_TILE * 1.5f + (i * TAMANHO_TILE * 3), TAMANHO_TILE * 1.5f };
         g_jogadores[i].frame_atual = 0;
         g_jogadores[i].direcao_olhando = (Vector2){0, 1}; // Olhando para baixo
         g_jogadores[i].vida = 1;
         g_jogadores[i].max_bombas = 1;
         g_jogadores[i].poder_bomba = 1;
-        // ... (etc)
+        g_jogadores[i].bombas_plantadas = 0;
+        g_jogadores[i].bot = (i == 0) ? false : true; 
     }
 
-    g_tela_atual = TELA_MENU; // Começa no menu
-    // ReiniciarMapa();
+    g_tela_atual = TELA_MENU;
 }
 
 void AtualizarJogo(void) {
@@ -84,31 +129,63 @@ void AtualizarJogo(void) {
 }
 
 void DesenharJogo(void) {
-    BeginDrawing();
-    ClearBackground(DARKGREEN); // Cor do chão
-
-    switch (g_tela_atual) {
-        case TELA_MENU:
-            DesenharTelaMenu();
-            break;
-        case TELA_JOGO:
-            DesenharTelaJogo();
-            break;
-        case TELA_FIM:
-            DesenharTelaFim();
-            break;
-    }
+    // --- MUDANÇA PRINCIPAL ---
     
+    // 1. Começa a desenhar no "Canvas Virtual" (600x520)
+    BeginTextureMode(g_canvas_virtual);
+        
+        // --- CORRIGIDO: Limpa o canvas virtual de preto ---
+        ClearBackground(BLACK); 
+
+        // Desenha a tela apropriada DENTRO do canvas
+        switch (g_tela_atual) {
+            case TELA_MENU:
+                DesenharTelaMenu();
+                break;
+            case TELA_JOGO:
+                DesenharTelaJogo();
+                break;
+            case TELA_FIM:
+                DesenharTelaFim();
+                break;
+        }
+    
+    EndTextureMode();
+
+    // 2. Começa a desenhar na tela REAL
+    BeginDrawing();
+    
+        // Limpa a tela real (cor das barras pretas)
+        ClearBackground(BLACK); 
+        
+        // 3. Desenha o Canvas (600x520) escalonado na tela real
+        // O g_canvas_origem agora usa -VIRTUAL_ALTURA para inverter o eixo Y
+        // da textura, já que DrawTexturePro desenha de baixo para cima
+        // para render textures por padrão.
+        DrawTexturePro(
+            g_canvas_virtual.texture,
+            (Rectangle){ 0.0f, 0.0f, (float)g_canvas_virtual.texture.width, (float)-g_canvas_virtual.texture.height }, // <-- AQUI INVERTE O Y
+            g_canvas_destino,
+            (Vector2){ 0, 0 },
+            0.0f,
+            WHITE
+        );
+        
     EndDrawing();
 }
 
 void FinalizarJogo(void) {
     // --- Descarregar Sprites ---
-    UnloadTexture(g_spritesheet_personagens);
-    // UnloadTexture(g_sprite_bomba);
-    // ... (descarregar todas as texturas)
+    
+    UnloadRenderTexture(g_canvas_virtual); // Descarrega o canvas
+    UnloadTexture(g_textura_tela_inicio); 
 
-    // TODO: Limpar listas encadeadas (com free())
+    UnloadTexture(g_jogadores[0].boneco_sprite);
+    UnloadTexture(g_jogadores[1].boneco_sprite);
+    UnloadTexture(g_jogadores[2].boneco_sprite);
+    UnloadTexture(g_jogadores[3].boneco_sprite);
+
+    // ...
     
     CloseWindow();
 }
@@ -117,37 +194,37 @@ void FinalizarJogo(void) {
 
 // --- Menu ---
 void AtualizarTelaMenu(void) {
-    // Lógica para seleção de personagem, jogadores, etc.
     if (IsKeyPressed(KEY_ENTER)) {
         g_tela_atual = TELA_JOGO;
-        // ReiniciarMapa(); // Prepara o mapa para a partida
+        // ReiniciarMapa(); 
     }
 }
-
 void DesenharTelaMenu(void) {
-    DrawText("BOMBERMAN", 200, 150, 40, WHITE);
-    DrawText("Pressione ENTER para jogar", 190, 250, 20, WHITE);
+    // Desenha a imagem esticada para o canvas VIRTUAL (600x520)
+    Rectangle sourceRec = { 0.0f, 0.0f, (float)g_textura_tela_inicio.width, (float)g_textura_tela_inicio.height };
+    Rectangle destRec = { 0.0f, 0.0f, (float)VIRTUAL_LARGURA, (float)VIRTUAL_ALTURA };
+    DrawTexturePro(g_textura_tela_inicio, sourceRec, destRec, (Vector2){0, 0}, 0.0f, WHITE);
 }
 
 // --- Jogo (Partida) ---
-void AtualizarTelaJogo(void) {
-    ProcessarTecla();
-    AtualizarMovimento();
-    AtualizarBombas(GetFrameTime());
-    // TODO: AtualizarExplosoes, Colisões, etc.
-}
-
-// Função auxiliar (protótipo não precisa estar no .h)
+// (Protótipos)
 void DesenharJogadores(void);
 void DesenharMapa(void);
 void DesenharBombas(void);
 
+void AtualizarTelaJogo(void) {
+    ProcessarTecla();
+    AtualizarMovimento();
+    AtualizarBombas(GetFrameTime());
+}
+
 void DesenharTelaJogo(void) {
+    // Estas funções agora desenham no canvas de 600x520
     DesenharMapa();
     // DesenharItens();
     DesenharBombas();
     // DesenharExplosoes();
-    DesenharJogadores(); // <- Usa a função de sprite
+    DesenharJogadores();
 }
 
 // --- Tela Final ---
@@ -156,101 +233,50 @@ void AtualizarTelaFim(void) {
         g_tela_atual = TELA_MENU;
     }
 }
-
 void DesenharTelaFim(void) {
-    DrawText("FIM DE JOGO", 200, 150, 40, WHITE);
-    DrawText("Pressione ENTER para voltar ao menu", 150, 250, 20, WHITE);
+    DrawText("FIM DE JOGO", (VIRTUAL_LARGURA - MeasureText("FIM DE JOGO", 40)) / 2, 150, 40, WHITE);
+    DrawText("Pressione ENTER", (VIRTUAL_LARGURA - MeasureText("Pressione ENTER", 20)) / 2, 250, 20, WHITE);
 }
 
-// 3. Funções de Lógica da Partida
 
-void ReiniciarMapa(void) {
-    // TODO: Usar 'rand()' para popular g_mapa com TILE_PAREDE_MACIA
-}
+// 3. Funções de Lógica da Partida (Vazias)
 
-void ProcessarTecla(void) {
-    // TODO: Mudar a 'posicao' do g_jogadores[0] (jogador 1)
-    // if (IsKeyDown(KEY_W)) { ... }
-    // if (IsKeyPressed(KEY_SPACE)) { PlantarBomba(0); }
-}
-
-void AtualizarMovimento(void) {
-    // TODO: Lógica de animação e colisão com g_mapa
-    // Pega o dt = GetFrameTime();
-    // para cada jogador:
-    //   jogador->frame_timer += dt;
-    //   if (jogador->frame_timer >= 0.1f) {
-    //      jogador->frame_timer = 0;
-    //      jogador->frame_atual = (jogador->frame_atual + 1) % 3; // 3 frames de anim
-    //   }
-}
-
-void PlantarBomba(int id_jogador) {
-    // TODO:
-    // 1. Verificar se g_jogadores[id_jogador].bombas_plantadas < ...max_bombas
-    // 2. Alocar memória (NodeBomba* nova_bomba = malloc(...))
-    // 3. Preencher dados (pos, poder, timer=3.0f)
-    // 4. Adicionar na lista g_lista_bombas
-}
-
-void AtualizarBombas(float dt) {
-    // TODO:
-    // 1. Percorrer a lista g_lista_bombas
-    // 2. Para cada bomba: bomba->temporizador -= dt;
-    // 3. Se temporizador <= 0:
-    //    CriarExplosao(...)
-    //    Remover a bomba da lista (usando free())
-}
-
-void CriarExplosao(Vector2 pos_grid, int poder) {
-    // TODO:
-    // 1. Alocar memória (malloc) para NodeExplosao
-    // 2. Adicionar na lista g_lista_explosoes (com timer curto, ex: 0.5f)
-    // 3. (Lógica de propagação):
-    //    Quebrar TILE_PAREDE_MACIA no g_mapa
-    //    Chamar GerarItem(...)
-}
-
-void GerarItem(Vector2 pos_grid) {
-    // TODO:
-    // 1. Sorteia (rand()) se vai gerar item
-    // 2. Se sim, aloca (malloc) para NodeItem
-    // 3. Adiciona na lista g_lista_itens
-}
+void ReiniciarMapa(void) {}
+void ProcessarTecla(void) {}
+void AtualizarMovimento(void) {}
+void PlantarBomba(int id_jogador) {}
+void AtualizarBombas(float dt) {}
+void CriarExplosao(Vector2 pos_grid, int poder) {}
+void GerarItem(Vector2 pos_grid) {}
 
 
 // --- Implementação das funções de desenho ---
 
 void DesenharMapa(void) {
-    // TODO: Loop for duplo em g_mapa e desenhar retângulos
-    // ou DrawTexture(g_sprite_parede_fixa, ...)
+    // TODO
 }
 
 void DesenharBombas(void) {
-    // TODO: Percorrer g_lista_bombas e desenhar
-    // DrawTexture(g_sprite_bomba, ...)
+    // TODO
 }
 
 void DesenharJogadores(void) {
+    const int Y_OFFSET_ANIMACAO = 16; 
+
     for (int i = 0; i < 4; i++) {
-        // if (g_jogadores[i].vida <= 0) continue; 
         Jogador* jog = &g_jogadores[i];
 
-        // 1. Recorte (Source)
         Rectangle sourceRec = { 0 };
-        sourceRec.x = jog->frame_atual * SPRITE_LARGURA;
-        sourceRec.y = Y_OFFSET_COR[jog->cor];
+        sourceRec.x = jog->frame_atual * SPRITE_LARGURA; 
+        sourceRec.y = Y_OFFSET_ANIMACAO;                 
         sourceRec.width = SPRITE_LARGURA;
         sourceRec.height = SPRITE_ALTURA;
 
-        // 2. Destino (Dest)
-        // (Ajuste fino da posição para centralizar o sprite)
         Vector2 destPos = {
-            jog->posicao.x - (TAMANHO_TILE / 2) + 4.0f, // +4 para centralizar o 16px no 40px
-            jog->posicao.y - (TAMANHO_TILE / 2) - 4.0f  // -4 para "subir" o sprite
+            jog->posicao.x - (TAMANHO_TILE / 2) + 4.0f,
+            jog->posicao.y - (TAMANHO_TILE / 2) - 4.0f
         };
 
-        // 3. Desenha!
-        DrawTextureRec(g_spritesheet_personagens, sourceRec, destPos, WHITE);
+        DrawTextureRec(jog->boneco_sprite, sourceRec, destPos, WHITE);
     }
 }
