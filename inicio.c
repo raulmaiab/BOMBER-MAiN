@@ -1,7 +1,8 @@
 #include "raylib.h"
 #include "inicio.h"
 #include <stdbool.h>
-#include <math.h>   // para fmod, sin
+#include <math.h> 
+#include <stddef.h>  // para fmod, sin
 
 // Ajustes visuais
 #define TITLE_TEXT      "BomberMAIN"
