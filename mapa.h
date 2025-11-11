@@ -5,12 +5,11 @@
 #include <stdbool.h>
 
 // --- Constantes do Mapa ---
-// --- ALTERADO PARA PREENCHER A TELA (1440x900) ---
-#define MAP_GRID_WIDTH 16  // 16 blocos de largura
-#define MAP_GRID_HEIGHT 10 // 10 blocos de altura
-#define TILE_SIZE 90       // 1440/16 = 90 e 900/10 = 90
+// --- ALTERADO PARA 15x11 (Tela 1440x900) ---
+#define MAP_GRID_WIDTH 17  // 15 blocos de largura
+#define MAP_GRID_HEIGHT 11 // 11 blocos de altura
+#define TILE_SIZE 83      // 900 / 11 = 81.81 (usamos 81)
 // --- FIM DA ALTERAÇÃO ---
-
 // --- Tipos de Tiles ---
 typedef enum {
     TILE_EMPTY,          // 0: Chão (por onde se anda)

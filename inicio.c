@@ -2,7 +2,7 @@
 #include "inicio.h"
 #include <stdbool.h>
 #include <math.h> 
-#include <stddef.h>  // para fmod, sin
+#include <stddef.h>  // para fmod, sin, NULL
 
 // Ajustes visuais
 #define TITLE_TEXT      "BomberMAIN"
@@ -67,7 +67,11 @@ bool ExecutarTelaInicio(void)
         // INPUT
         if (IsKeyPressed(KEY_F11)) ToggleFullscreen();
         if (IsKeyPressed(KEY_ESCAPE)) { startGame = false; break; }
-        if (IsKeyPressed(KEY_ENTER))  { startGame = true;  break; }
+        
+        // --- CORREÇÃO DO VAZAMENTO DE INPUT ---
+        // Mude de IsKeyPressed para IsKeyReleased
+        if (IsKeyReleased(KEY_ENTER))  { startGame = true;  break; }
+        // --- FIM DA CORREÇÃO ---
 
         // LAYOUT
         const int sw = GetScreenWidth();

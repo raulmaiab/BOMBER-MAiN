@@ -2,13 +2,11 @@
 #include <stdlib.h> // Para rand() e srand()
 #include <time.h>   // Para srand()
 
-// --- ALTERADO: Texturas Mistas (Simulada e Carregadas) ---
-static Texture2D texChao;          // Textura simulada (verde)
-static Texture2D texIndestrutivel; // Carregada de wall.png
-static Texture2D texDestrutivel;   // Carregada de wallb.png
-// --- FIM DA ALTERAÇÃO ---
+// --- Texturas Individuais ---
+static Texture2D texChao;
+static Texture2D texIndestrutivel;
+static Texture2D texDestrutivel;
 
-// O grid do mapa (sem alteração)
 static TileType mapa[MAP_GRID_HEIGHT][MAP_GRID_WIDTH];
 
 
@@ -16,26 +14,24 @@ void InicializarMapa(void)
 {
     srand(time(NULL)); 
 
-    // --- ALTERADO: Carregar texturas ---
-    
-    // 1. Gera a textura do CHÃO (simulada)
-    Image imgChao = GenImageColor(TILE_SIZE, TILE_SIZE, DARKGREEN);
-    texChao = LoadTextureFromImage(imgChao);
-    UnloadImage(imgChao); // Já podemos descarregar a imagem da CPU
-
-    // 2. Carrega as texturas das PAREDES (dos PNGs)
+    // --- Carrega os 3 PNGs ---
+    texChao = LoadTexture("ground.png");
     texIndestrutivel = LoadTexture("wall.png");
-    texDestrutivel = LoadTexture("wallb.png"); // Usando o nome que você especificou
-
-    // 3. Checagem de falha
-    if (texChao.id == 0) TraceLog(LOG_WARNING, "Falha ao gerar textura do chão");
-    if (texIndestrutivel.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar wall.png");
-    if (texDestrutivel.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar wallb.png");
     
-    // --- FIM DA ALTERAÇÃO ---
+    // --- CORREÇÃO AQUI ---
+    // Verifique se o seu ficheiro se chama "wallb.png"
+    texDestrutivel = LoadTexture("wallb.png"); 
+
+    // Checagem de falha
+    if (texChao.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar ground.png");
+    if (texIndestrutivel.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar wall.png");
+    
+    // --- E AQUI ---
+    if (texDestrutivel.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar wallb.png");
+    // --- FIM DA CORREÇÃO ---
 
 
-    // 3. Gera o layout do mapa (Sem alteração)
+    // Gera o layout do mapa (Sem alteração)
     for (int y = 0; y < MAP_GRID_HEIGHT; y++) {
         for (int x = 0; x < MAP_GRID_WIDTH; x++) {
             if (y == 0 || y == MAP_GRID_HEIGHT - 1 || x == 0 || x == MAP_GRID_WIDTH - 1) {
@@ -57,8 +53,7 @@ void InicializarMapa(void)
         }
     }
 
-    // 4. Limpa as posições iniciais (Sem alteração)
-    // (O código dos 4 cantos permanece o mesmo)
+    // Limpa as posições iniciais (Sem alteração)
     mapa[1][1] = TILE_EMPTY;
     mapa[1][2] = TILE_EMPTY;
     mapa[2][1] = TILE_EMPTY;
@@ -78,14 +73,10 @@ void InicializarMapa(void)
 
 void DesenharMapa(void)
 {
-    // --- ALTERADO: Lógica de desenho mista ---
-    
     Vector2 origin = { 0, 0 };
 
     // Retângulos Fonte (Source)
-    // O chão simulado tem o tamanho exato de TILE_SIZE
     Rectangle srcChao = { 0, 0, (float)texChao.width, (float)texChao.height };
-    // As paredes (wall.png/wallb.png) têm suas próprias dimensões (ex: 16x16)
     Rectangle srcInd = { 0, 0, (float)texIndestrutivel.width, (float)texIndestrutivel.height };
     Rectangle srcDest = { 0, 0, (float)texDestrutivel.width, (float)texDestrutivel.height };
 
@@ -93,8 +84,6 @@ void DesenharMapa(void)
     for (int y = 0; y < MAP_GRID_HEIGHT; y++) {
         for (int x = 0; x < MAP_GRID_WIDTH; x++) {
             
-            // Retângulo Destino (onde vai na tela)
-            // Todos serão desenhados no tamanho 90x90
             Rectangle destRec = { 
                 (float)x * TILE_SIZE, 
                 (float)y * TILE_SIZE, 
@@ -102,7 +91,7 @@ void DesenharMapa(void)
                 (float)TILE_SIZE 
             };
 
-            // Desenha o CHÃO (verde simulado) por baixo de tudo
+            // Desenha o CHÃO (do PNG) por baixo de tudo
             DrawTexturePro(texChao, srcChao, destRec, origin, 0.0f, WHITE);
 
             // Desenha a parede (PNG) por CIMA do chão
@@ -111,20 +100,18 @@ void DesenharMapa(void)
                     DrawTexturePro(texIndestrutivel, srcInd, destRec, origin, 0.0f, WHITE);
                     break;
                 case TILE_DESTRUCTIBLE:
+                    // Se a textura falhou ao carregar, isto não desenha nada
                     DrawTexturePro(texDestrutivel, srcDest, destRec, origin, 0.0f, WHITE);
                     break;
                 case TILE_EMPTY:
-                    // O chão já foi desenhado
                     break;
             }
         }
     }
-    // --- FIM DA ALTERAÇÃO ---
 }
 
 void DescarregarMapa(void)
 {
-    // --- ALTERADO: Descarregar as 3 texturas ---
     UnloadTexture(texChao);
     UnloadTexture(texIndestrutivel);
     UnloadTexture(texDestrutivel);
