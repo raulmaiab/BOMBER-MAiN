@@ -1,45 +1,96 @@
 #include "raylib.h"
-#include "inicio.h" // Inclui o header da tela de início
-#include <stdbool.h> // Necessário para o 'bool'
+#include "inicio.h"
+#include "menu.h"
+#include <stdbool.h>
 
-// --- ATENCAO AQUI ---
-// Ajuste estes valores para que sejam EXATAMENTE
-// a largura e altura da sua imagem "inicio.png"
-// (Exemplo: se a imagem for 1280x720)
 const int SCREEN_WIDTH = 1440;
 const int SCREEN_HEIGHT = 900;
-// (Se sua imagem for 800x600, use 800 e 600)
+
+// --- FUNÇÕES PLACEHOLDER MOVIDAS PARA O FIM ---
+// (Declarações antecipadas, se necessário, mas como estão no mesmo
+// ficheiro e antes de 'main', podemos apenas definir abaixo)
+void ExecutarJogoBattle(void);
+void ExecutarJogoStory(void);
+void ExecutarShop(void);
+void ExecutarOther(void);
+// --------------------------------------------------
+
 
 int main(void)
 {
-    // 1. Inicialização
-    // A janela agora será criada com o tamanho exato da sua imagem.
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "BomberMain");
-
     ToggleFullscreen();
-
     SetTargetFPS(60);
 
     bool deveContinuar = ExecutarTelaInicio();
-
-    // 3. Se o usuário não fechou a janela, prossiga
-    if (deveContinuar)
+    
+    while (deveContinuar && !WindowShouldClose())
     {
-        // Loop principal do jogo (placeholder)
-        while (!WindowShouldClose())
+        OpcaoMenu escolha = ExecutarTelaMenu();
+        
+        switch (escolha)
         {
-            // --- Lógica do Jogo (placeholder) ---
+            case ESCOLHA_BATTLE:
+                ExecutarJogoBattle();
+                break;
             
-            // --- Desenho (placeholder) ---
-            BeginDrawing();
-            ClearBackground(DARKGRAY);
-            DrawText("JOGO PRINCIPAL - (Pressione ESC para sair)", 190, 200, 20, LIGHTGRAY);
-            EndDrawing();
+            case ESCOLHA_STORY:
+                ExecutarJogoStory();
+                break;
+                
+            case ESCOLHA_SHOP:
+                ExecutarShop();
+                break;
+
+            case ESCOLHA_OTHER:
+                ExecutarOther(); 
+                break;
+
+            case ESCOLHA_SAIR:
+            case ESCOLHA_NENHUMA_OU_FECHOU:
+                deveContinuar = false;
+                break;
         }
     }
 
-    // 4. Finalização
-    CloseWindow(); // Fecha a janela e o contexto OpenGL
-
+    CloseWindow(); 
     return 0;
+}
+
+// --- Implementações das funções (agora definidas apenas UMA VEZ) ---
+void ExecutarJogoBattle(void) {
+    while (!WindowShouldClose()) {
+        if (IsKeyPressed(KEY_ESCAPE)) break;
+        BeginDrawing(); ClearBackground(RED);
+        DrawText("MODO BATTLE - Pressione ESC para voltar", 190, 200, 20, WHITE);
+        EndDrawing();
+    }
+}
+
+void ExecutarJogoStory(void)
+{
+    while (!WindowShouldClose())
+    {
+        if (IsKeyPressed(KEY_ESCAPE)) break;
+        BeginDrawing(); ClearBackground(GREEN);
+        DrawText("MODO STORY - Pressione ESC para voltar", 190, 200, 20, WHITE);
+        EndDrawing();
+    }
+}
+
+void ExecutarShop(void) {
+    while (!WindowShouldClose()) {
+        if (IsKeyPressed(KEY_ESCAPE)) break;
+        BeginDrawing(); ClearBackground(BROWN);
+        DrawText("LOJA - Pressione ESC para voltar", 190, 200, 20, WHITE);
+        EndDrawing();
+    }
+}
+void ExecutarOther(void) {
+    while (!WindowShouldClose()) {
+        if (IsKeyPressed(KEY_ESCAPE)) break;
+        BeginDrawing(); ClearBackground(DARKGRAY);
+        DrawText("OUTROS/OPCOES - Pressione ESC para voltar", 190, 200, 20, WHITE);
+        EndDrawing();
+    }
 }
