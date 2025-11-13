@@ -1,6 +1,7 @@
 #include "jogador.h"
 #include "raylib.h" 
-#include "mapa.h"   // <-- ADICIONADO: Precisamos do TILE_SIZE
+#include "mapa.h"   
+#include "bomba.h" // <-- 1. INCLUÍDO (precisa de PlantarBomba)
 
 Jogador CriarJogador(Vector2 posInicial, const char* imgSprite)
 {
@@ -12,26 +13,19 @@ Jogador CriarJogador(Vector2 posInicial, const char* imgSprite)
         TraceLog(LOG_WARNING, "Falha ao carregar textura do jogador: %s", imgSprite);
     }
     j.vivo = true;
-
-    // --- NOVO: Definir o frame inicial ---
-    // Isto é um "chute" olhando para a sua spritesheet (SpriteAzul.png)
-    // O primeiro frame da animação "Walk" parece estar nestas coordenadas:
-    // x: 8, y: 24, largura: 16, altura: 24
-    // Você talvez precise ajustar estes valores!
-    j.frameRec = (Rectangle){ 8.0f, 24.0f, 16.0f, 24.0f };
     
     return j;
 }
 
-// ATUALIZADO: Com lógica de colisão (sem alteração da última vez)
-void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRight)
+// --- 2. FUNÇÃO ATUALIZADA ---
+void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRight, int keyBomb, NodeBombas *gBombas)
 {
     if (!j->vivo) return;
 
     Vector2 posTentativa = j->pos;
     Vector2 posFinal = j->pos; 
 
-    // --- Movimento X ---
+    // --- Movimento X (Sem alteração) ---
     posTentativa.x += IsKeyDown(keyRight) ? j->velocidade : (IsKeyDown(keyLeft) ? -j->velocidade : 0);
     float collisionRectX = (IsKeyDown(keyRight)) ? posTentativa.x + TILE_SIZE - 1 : posTentativa.x;
     float collisionRectY = j->pos.y;
@@ -44,7 +38,7 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
         posFinal.x = posTentativa.x; 
     }
     
-    // --- Movimento Y ---
+    // --- Movimento Y (Sem alteração) ---
     posTentativa.y += IsKeyDown(keyDown) ? j->velocidade : (IsKeyDown(keyUp) ? -j->velocidade : 0);
     float collisionRectX_Y = posFinal.x; 
     float collisionRectY_Y = (IsKeyDown(keyDown)) ? posTentativa.y + TILE_SIZE - 1 : posTentativa.y;
@@ -58,33 +52,48 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
     }
 
     j->pos = posFinal;
+    
+    // --- 3. LÓGICA DE PLANTAR BOMBA ---
+    if (IsKeyPressed(keyBomb))
+    {
+        // Precisamos "alinhar" (snap) a bomba à grelha.
+        // Se o jogador está em (92, 95), a bomba deve ir para (90, 90).
+        
+        // Pega o centro do jogador
+        float centerX = j->pos.x + (TILE_SIZE / 2.0f);
+        float centerY = j->pos.y + (TILE_SIZE / 2.0f);
+
+        // Converte para a coordenada da grelha (ex: 1, 1)
+        int gridX = (int)(centerX / TILE_SIZE);
+        int gridY = (int)(centerY / TILE_SIZE);
+
+        // Converte de volta para pixels (ex: 90.0f, 90.0f)
+        Vector2 posBombaAlinhada = { (float)gridX * TILE_SIZE, (float)gridY * TILE_SIZE };
+        
+        PlantarBomba(gBombas, posBombaAlinhada);
+    }
+    // --- FIM DA LÓGICA ---
 }
+// --- FIM DA ATUALIZAÇÃO ---
 
 
-// --- ATUALIZADO: Usando DrawTexturePro ---
 void DesenharJogador(const Jogador* j)
 {
     if (!j->vivo) return;
     
-    // Onde o jogador será desenhado (destino)
-    // Ele será desenhado na posição X/Y do jogador,
-    // e com o tamanho de um TILE_SIZE (40x40)
     Rectangle destRec = { j->pos.x, j->pos.y, TILE_SIZE, TILE_SIZE };
-    
-    // A origem (para rotação/escala, 0,0 é o canto)
+    Rectangle sourceRec = { 0.0f, 0.0f, (float)j->textura.width, (float)j->textura.height };
     Vector2 origin = { 0, 0 };
 
-    // Desenha a parte da textura (j->frameRec) no destino (destRec)
     DrawTexturePro(
-        j->textura,  // A spritesheet inteira (ex: SpriteAzul.png)
-        j->frameRec, // O retângulo FONTE (ex: {8, 24, 16, 24})
-        destRec,     // O retângulo DESTINO (ex: {100, 100, 40, 40})
-        origin,      // Origem da rotação
-        0.0f,        // Rotação
-        WHITE        // Cor (sem filtro)
+        j->textura,  
+        sourceRec, 
+        destRec,     
+        origin,      
+        0.0f,        
+        WHITE        
     );
 }
-
 
 void DestruirJogador(Jogador* j)
 {

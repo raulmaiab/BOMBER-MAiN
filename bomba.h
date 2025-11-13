@@ -3,36 +3,54 @@
 
 #include "raylib.h"
 #include <stdbool.h>
+#include "explosao.h" // <-- Inclui o novo sistema
+
+#define MAX_BOMBAS_ATIVAS 20
 
 typedef struct Bomba 
 {
-    Vector2 posicao;
-    float tempoExplosao;      // quanto tempo a bomba leva para explodir
-    int raioExplosao;        // tamanho da explosão em blocos
-    Texture2D sprite;          //desenho da bomba
+    Vector2 posicao;          
+    float tempoExplosao;      
+    int raioExplosao;         
+    bool ativa;               
+    
+    // Para Animação de piscar
+    int currentFrame;         // Frame atual (0 = bomba1.png, 1 = bomba2.png)
+    float frameTimer;         
+    
 } Bomba;
 
 typedef struct {
-    Bomba *head;
-    int quantidade;
-    Texture2D sprite;
+    Bomba bombas[MAX_BOMBAS_ATIVAS]; 
+    int quantidade;                  
+    Texture2D texNormal; // Textura para bomba1.png
+    Texture2D texAviso;  // Textura para bomba2.png
 } NodeBombas;
 
-NodeBombas CriarNodeBombas(const char *sprite);
+/**
+ * @brief Carrega as texturas da bomba (bomba1.png, bomba2.png)
+ */
+NodeBombas CriarNodeBombas(void); // Removemos o parâmetro, os caminhos estão no .c
 
-// Cria uma bomba desativada (não aparece ainda)
-Bomba CriarBomba(const char *renderSprite);
+/**
+ * @brief Adiciona uma bomba ao mundo.
+ */
+void PlantarBomba(NodeBombas *g, Vector2 posBomba);
 
-// Posiciona e ativa a bomba
-void PlantarBomba(Bomba *bomba, Vector2 posicao);
+/**
+ * @brief Atualiza as bombas. QUANDO EXPLODIR, chama AtivarExplosao.
+ * @param gExplosoes O ponteiro para o gestor de explosões.
+ */
+bool AtualizarBombas(NodeBombas *g, float deltaTime, NodeExplosoes *gExplosoes);
 
-// Atualiza contagem do tempo da bomba
-bool AtualizarBomba(Bomba *bomba, float deltaTime);
+/**
+ * @brief Desenha as bombas ativas (piscando).
+ */
+void DesenharBombas(const NodeBombas *g);
 
-// Desenha a bomba se estiver ativa
-void DesenharBomba(const Bomba *bomba);
+/**
+ * @brief Descarrega as texturas da bomba.
+ */
+void UnloadBombas(NodeBombas *g);
 
-// Limpa texturas
-void UnloadBomba(Bomba *bomba);
-
-#endif
+#endif // BOMBA_H
