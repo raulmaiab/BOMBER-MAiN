@@ -23,27 +23,14 @@ int main(void)
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "BomberMain");
     ToggleFullscreen();
     SetTargetFPS(60);
-
     bool deveContinuar = ExecutarTelaInicio();
-    
-    while (deveContinuar && !WindowShouldClose())
-    {
+    while (deveContinuar && !WindowShouldClose()) {
         OpcaoMenu escolha = ExecutarTelaMenu();
-        
-        switch (escolha)
-        {
-            case ESCOLHA_BATTLE:
-                ExecutarJogoBattle();
-                break;
-            case ESCOLHA_STORY:
-                ExecutarJogoStory(); 
-                break;
-            case ESCOLHA_SHOP:
-                ExecutarShop();
-                break;
-            case ESCOLHA_OTHER:
-                ExecutarOther(); 
-                break;
+        switch (escolha) {
+            case ESCOLHA_BATTLE: ExecutarJogoBattle(); break;
+            case ESCOLHA_STORY:  ExecutarJogoStory();  break;
+            case ESCOLHA_SHOP:   ExecutarShop();    break;
+            case ESCOLHA_OTHER:  ExecutarOther();   break;
             case ESCOLHA_SAIR:
             case ESCOLHA_NENHUMA_OU_FECHOU:
                 deveContinuar = false;
@@ -60,10 +47,15 @@ void ExecutarJogoBattle(void) {
     
     InicializarMapa(); 
     
-    Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco.png");
-    Jogador j2 = CriarJogador(GetPlayerStartPosition(1), "SpriteVermelho.png");
-    Jogador j3 = CriarJogador(GetPlayerStartPosition(2), "SpriteAzul.png");
-    Jogador j4 = CriarJogador(GetPlayerStartPosition(3), "SpritePreto.png");
+    Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco.png", false); // Humano
+    Jogador j2 = CriarJogador(GetPlayerStartPosition(1), "SpriteVermelho.png", true);  // Bot
+    Jogador j3 = CriarJogador(GetPlayerStartPosition(2), "SpriteAzul.png", true);      // Bot
+    Jogador j4 = CriarJogador(GetPlayerStartPosition(3), "SpritePreto.png", true);       // Bot
+    
+    // --- NOVO: Array de Jogadores ---
+    Jogador* todosJogadores[] = {&j1, &j2, &j3, &j4};
+    int numJogadores = 4;
+    // --- FIM NOVO ---
 
     NodeBombas gBombas = CriarNodeBombas();
     NodeExplosoes gExplosoes = CriarNodeExplosoes();
@@ -71,21 +63,25 @@ void ExecutarJogoBattle(void) {
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_ESCAPE)) break;
         
-        // --- ATUALIZADO: Chamadas de AtualizarJogador ---
-        // Passa a tecla de bomba (KEY_SPACE) e o gestor (&gBombas)
-        AtualizarJogador(&j1, KEY_W, KEY_S, KEY_A, KEY_D, KEY_SPACE, &gBombas); 
-        AtualizarJogador(&j2, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_RIGHT_CONTROL, &gBombas); // J2 usa Right-Ctrl
-        // --- FIM DA ATUALIZAÇÃO ---
+        float deltaTime = GetFrameTime(); 
 
-        float deltaTime = GetFrameTime();
-        AtualizarBombas(&gBombas, deltaTime, &gExplosoes);
+        // Atualiza Jogadores (sem alteração)
+        AtualizarJogador(&j1, KEY_W, KEY_S, KEY_A, KEY_D, KEY_SPACE, &gBombas, deltaTime); 
+        AtualizarJogador(&j2, 0, 0, 0, 0, 0, &gBombas, deltaTime);
+        AtualizarJogador(&j3, 0, 0, 0, 0, 0, &gBombas, deltaTime);
+        AtualizarJogador(&j4, 0, 0, 0, 0, 0, &gBombas, deltaTime);
+
+        // --- ATUALIZADO: Passa a lista de jogadores ---
+        AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadores);
+        // --- FIM DA ATUALIZAÇÃO ---
+        
         AtualizarExplosoes(&gExplosoes, deltaTime);
 
         BeginDrawing(); 
             ClearBackground(BLACK);
-            
             DesenharMapa();
-                
+            
+            // Desenha os jogadores (já têm a lógica !j->vivo)
             DesenharJogador(&j1);
             DesenharJogador(&j2);
             DesenharJogador(&j3);
@@ -110,7 +106,12 @@ void ExecutarJogoBattle(void) {
 void ExecutarJogoStory(void)
 {
     InicializarMapa(); 
-    Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco.png");
+    Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco.png", false); // Humano
+    
+    // --- NOVO: Array de Jogadores ---
+    Jogador* todosJogadores[] = {&j1};
+    int numJogadores = 1;
+    // --- FIM NOVO ---
     
     NodeBombas gBombas = CriarNodeBombas();
     NodeExplosoes gExplosoes = CriarNodeExplosoes();
@@ -119,23 +120,21 @@ void ExecutarJogoStory(void)
     {
         if (IsKeyPressed(KEY_ESCAPE)) break;
         
-        // --- ATUALIZADO: Chamada de AtualizarJogador ---
-        AtualizarJogador(&j1, KEY_W, KEY_S, KEY_A, KEY_D, KEY_SPACE, &gBombas);
-        // --- FIM DA ATUALIZAÇÃO ---
+        float deltaTime = GetFrameTime(); 
+        AtualizarJogador(&j1, KEY_W, KEY_S, KEY_A, KEY_D, KEY_SPACE, &gBombas, deltaTime);
 
-        float deltaTime = GetFrameTime();
-        AtualizarBombas(&gBombas, deltaTime, &gExplosoes);
+        // --- ATUALIZADO: Passa a lista de jogadores ---
+        AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadores);
+        // --- FIM DA ATUALIZAÇÃO ---
+        
         AtualizarExplosoes(&gExplosoes, deltaTime);
 
         BeginDrawing(); 
             ClearBackground(BLACK);
-            
             DesenharMapa();
             DesenharJogador(&j1);
-                
             DesenharBombas(&gBombas);
             DesenharExplosoes(&gExplosoes);
-            
         EndDrawing();
     }
     

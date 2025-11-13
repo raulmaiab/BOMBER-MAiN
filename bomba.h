@@ -3,9 +3,15 @@
 
 #include "raylib.h"
 #include <stdbool.h>
-#include "explosao.h" // <-- Inclui o novo sistema
+#include "explosao.h" 
 
 #define MAX_BOMBAS_ATIVAS 20
+
+// --- NOVO: Forward Declaration ---
+// Dizemos ao compilador "existe uma struct Jogador",
+// para evitar erros de inclusão circular com jogador.h
+struct Jogador;
+// --- FIM NOVO ---
 
 typedef struct Bomba 
 {
@@ -14,8 +20,7 @@ typedef struct Bomba
     int raioExplosao;         
     bool ativa;               
     
-    // Para Animação de piscar
-    int currentFrame;         // Frame atual (0 = bomba1.png, 1 = bomba2.png)
+    int currentFrame;         
     float frameTimer;         
     
 } Bomba;
@@ -23,34 +28,21 @@ typedef struct Bomba
 typedef struct {
     Bomba bombas[MAX_BOMBAS_ATIVAS]; 
     int quantidade;                  
-    Texture2D texNormal; // Textura para bomba1.png
-    Texture2D texAviso;  // Textura para bomba2.png
+    Texture2D texNormal; 
+    Texture2D texAviso;  
 } NodeBombas;
 
-/**
- * @brief Carrega as texturas da bomba (bomba1.png, bomba2.png)
- */
-NodeBombas CriarNodeBombas(void); // Removemos o parâmetro, os caminhos estão no .c
+NodeBombas CriarNodeBombas(void); 
 
-/**
- * @brief Adiciona uma bomba ao mundo.
- */
 void PlantarBomba(NodeBombas *g, Vector2 posBomba);
 
-/**
- * @brief Atualiza as bombas. QUANDO EXPLODIR, chama AtivarExplosao.
- * @param gExplosoes O ponteiro para o gestor de explosões.
- */
-bool AtualizarBombas(NodeBombas *g, float deltaTime, NodeExplosoes *gExplosoes);
+// --- ATUALIZADO: Assinatura da função ---
+// Agora aceita um array de ponteiros de Jogador e a quantidade.
+bool AtualizarBombas(NodeBombas *g, float deltaTime, NodeExplosoes *gExplosoes, struct Jogador* jogadores[], int numJogadores);
+// --- FIM DA ATUALIZAÇÃO ---
 
-/**
- * @brief Desenha as bombas ativas (piscando).
- */
 void DesenharBombas(const NodeBombas *g);
 
-/**
- * @brief Descarrega as texturas da bomba.
- */
 void UnloadBombas(NodeBombas *g);
 
 #endif // BOMBA_H
