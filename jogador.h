@@ -5,63 +5,52 @@
 #include <stdbool.h>
 #include "bomba.h" 
 
-// --- Estados da IA --- (Sem alteração)
+// --- ATUALIZADO: Estados da IA ---
 typedef enum {
-    BOT_STATE_WANDERING, 
-    BOT_STATE_FLEEING    
+    BOT_STATE_WANDERING, // Passeando
+    BOT_STATE_FLEEING,   // Fugindo (para sair do tile da bomba)
+    BOT_STATE_HOLDING    // Parado (esperando a bomba explodir)
 } BotState;
+// --- FIM DA ATUALIZAÇÃO ---
 
-// --- NOVO: Constantes de Animação ---
-#define NUM_FRAMES_ANDAR 3 // Para costas1, costas2, costas3, etc.
-#define ANIM_FRAME_SPEED 0.15f // Velocidade da animação (tempo por frame)
-
-// --- NOVO: Direção de Animação ---
-typedef enum {
-    DIR_CIMA = 0,
-    DIR_BAIXO,
-    DIR_ESQUERDA,
-    DIR_DIREITA,
-    DIR_PARADO // Quando o jogador não se move
-} AnimDirection;
-// --- FIM NOVO ---
-
+// --- Constantes (Sem alteração) ---
+#define NUM_FRAMES_ANDAR 3 
+#define ANIM_FRAME_SPEED 0.15f 
+typedef enum { DIR_CIMA=0, DIR_BAIXO, DIR_ESQUERDA, DIR_DIREITA, DIR_PARADO } AnimDirection;
 
 typedef struct Jogador
 {
     Vector2 pos;       
     float velocidade;  
     
-    // --- ATUALIZADO: Texturas para Animação ---
-    Texture2D texParado; // O frame 'andando' ou 'costas' padrão
+    // Texturas de Animação (Sem alteração)
+    Texture2D texParado; 
     Texture2D texCima[NUM_FRAMES_ANDAR];
     Texture2D texBaixo[NUM_FRAMES_ANDAR];
     Texture2D texEsquerda[NUM_FRAMES_ANDAR];
     Texture2D texDireita[NUM_FRAMES_ANDAR];
-
-    int currentFrame;           // Índice do frame atual (0, 1, 2)
-    float frameTimer;           // Temporizador para mudar de frame
-    AnimDirection currentDir;   // Direção atual para selecionar a textura
-    // --- FIM DA ATUALIZAÇÃO ---
+    int currentFrame;           
+    float frameTimer;           
+    AnimDirection currentDir;   
 
     bool vivo;         
     
-    // --- Variáveis do Bot (Sem alteração) ---
+    // --- Variáveis do Bot ATUALIZADAS ---
     bool ehBot;
     BotState botState;      
-    float botStateTimer;    
-    int botMoveDirecao;     
+    float botStateTimer;    // Temporizador para o estado atual
+    int botMoveDirecao;     // 0-3 (Move), 4 (Parado)
+    Vector2 botLastBombPos; // Onde o bot plantou a bomba
+    // --- FIM DA ATUALIZAÇÃO ---
+    
+    float bombaCooldown; 
     
 } Jogador;
 
-// --- ATUALIZADO: CriarJogador (novo parâmetro para a pasta) ---
+// Assinaturas (Sem alteração)
 Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot);
-
-// Assinatura de AtualizarJogador (Sem alteração)
 void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRight, int keyBomb, NodeBombas *gBombas, float deltaTime);
-
 void DesenharJogador(const Jogador* j);
-
-// --- ATUALIZADO: DestruirJogador (para descarregar todas as texturas) ---
 void DestruirJogador(Jogador* j);
 
 #endif // JOGADOR_H
