@@ -5,6 +5,9 @@
 #include "jogador.h"    
 #include "bomba.h"      
 #include "explosao.h"   
+#include "derrota.h"    
+#include "vitoria.h"    // <-- 1. INCLUÍDO
+
 #include <stdbool.h>
 
 const int SCREEN_WIDTH = 1440;
@@ -41,17 +44,14 @@ int main(void)
 }
 
 
-// --- ATUALIZADO: ExecutarJogoBattle ---
 void ExecutarJogoBattle(void) {
     
     InicializarMapa(); 
     
-    // --- ATUALIZADO: CriarJogador (agora passa a PASTA dos sprites) ---
-    Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco", false); // Humano (se tiver sprites, crie pasta SpriteBranco/)
+    Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco", false); // Humano
     Jogador j2 = CriarJogador(GetPlayerStartPosition(1), "SpriteVermelho", true);  // Bot
     Jogador j3 = CriarJogador(GetPlayerStartPosition(2), "SpriteAzul", true);      // Bot
     Jogador j4 = CriarJogador(GetPlayerStartPosition(3), "SpritePreto", true);       // Bot
-    // --- FIM DA ATUALIZAÇÃO ---
     
     Jogador* todosJogadores[] = {&j1, &j2, &j3, &j4};
     int numJogadores = 4;
@@ -71,6 +71,22 @@ void ExecutarJogoBattle(void) {
 
         AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadores);
         AtualizarExplosoes(&gExplosoes, deltaTime);
+
+        // --- VERIFICAÇÃO DE DERROTA ---
+        if (!j1.vivo) 
+        {
+            ExecutarTelaDerrota(); 
+            break; 
+        }
+        
+        // --- 2. VERIFICAÇÃO DE VITÓRIA ---
+        // Se o J1 (Humano) está vivo E todos os bots estão mortos
+        if (j1.vivo && !j2.vivo && !j3.vivo && !j4.vivo)
+        {
+            ExecutarTelaVitoria(); // Mostra a tela de Vitória
+            break; // Sai do loop da batalha e volta ao menu
+        }
+        // --- FIM DA VERIFICAÇÃO ---
 
         BeginDrawing(); 
             ClearBackground(BLACK);
@@ -96,15 +112,16 @@ void ExecutarJogoBattle(void) {
     UnloadExplosoes(&gExplosoes);
 }
 
-// --- ATUALIZADO: ExecutarJogoStory ---
+
 void ExecutarJogoStory(void)
 {
-    InicializarMapa(); 
-    Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco", false); // Humano (se tiver sprites, crie pasta SpriteBranco/)
+    // (Sem alteração aqui, pois a condição de vitória
+    // era específica para o modo Battle com os 3 bots)
     
+    InicializarMapa(); 
+    Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco", false); 
     Jogador* todosJogadores[] = {&j1};
     int numJogadores = 1;
-    
     NodeBombas gBombas = CriarNodeBombas();
     NodeExplosoes gExplosoes = CriarNodeExplosoes();
     
@@ -114,9 +131,14 @@ void ExecutarJogoStory(void)
         
         float deltaTime = GetFrameTime(); 
         AtualizarJogador(&j1, KEY_W, KEY_S, KEY_A, KEY_D, KEY_SPACE, &gBombas, deltaTime);
-
         AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadores);
         AtualizarExplosoes(&gExplosoes, deltaTime);
+
+        if (!j1.vivo)
+        {
+            ExecutarTelaDerrota();
+            break;
+        }
 
         BeginDrawing(); 
             ClearBackground(BLACK);
@@ -134,19 +156,5 @@ void ExecutarJogoStory(void)
 }
 
 // --- Funções Placeholder (sem alteração) ---
-void ExecutarShop(void) {
-    while (!WindowShouldClose()) {
-        if (IsKeyPressed(KEY_ESCAPE)) break;
-        BeginDrawing(); ClearBackground(BROWN);
-        DrawText("LOJA - Pressione ESC para voltar", 190, 200, 20, WHITE);
-        EndDrawing();
-    }
-}
-void ExecutarOther(void) {
-    while (!WindowShouldClose()) {
-        if (IsKeyPressed(KEY_ESCAPE)) break;
-        BeginDrawing(); ClearBackground(DARKGRAY);
-        DrawText("OUTROS/OPCOES - Pressione ESC para voltar", 190, 200, 20, WHITE);
-        EndDrawing();
-    }
-}
+void ExecutarShop(void) { /* ... */ }
+void ExecutarOther(void) { /* ... */ }
