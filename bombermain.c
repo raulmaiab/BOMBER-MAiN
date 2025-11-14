@@ -1,7 +1,7 @@
 #include "raylib.h"
 #include "inicio.h"
 #include "menu.h"
-#include "menu_battle.h" // <-- 1. INCLUÍDO
+#include "menu_battle.h" 
 #include "mapa.h"       
 #include "jogador.h"    
 #include "bomba.h"      
@@ -13,10 +13,8 @@
 const int SCREEN_WIDTH = 1440;
 const int SCREEN_HEIGHT = 900;
 
-// --- ATUALIZADO: Declaração antecipada ---
+// Declarações (Sem alteração)
 void ExecutarJogoBattle(BattleSettings settings);
-// --- FIM DA ATUALIZAÇÃO ---
-
 void ExecutarJogoStory(void);
 void ExecutarShop(void);
 void ExecutarOther(void);
@@ -35,71 +33,46 @@ int main(void)
         
         switch (escolha)
         {
-            // --- ATUALIZADO: Lógica do Menu Battle ---
             case ESCOLHA_BATTLE:
                 { 
                     BattleSettings settings; 
                     bool iniciar = ExecutarMenuBattle(&settings); 
-                    
                     if (iniciar)
                     {
                         ExecutarJogoBattle(settings); 
                     }
                 }
                 break;
-            // --- FIM DA ATUALIZAÇÃO ---
-            
-            case ESCOLHA_STORY:
-                ExecutarJogoStory(); 
-                break;
-                
-            case ESCOLHA_SHOP:
-                ExecutarShop();
-                break;
-
-            case ESCOLHA_OTHER:
-                ExecutarOther(); 
-                break;
-
+            case ESCOLHA_STORY: ExecutarJogoStory(); break;
+            case ESCOLHA_SHOP: ExecutarShop(); break;
+            case ESCOLHA_OTHER: ExecutarOther(); break;
             case ESCOLHA_SAIR:
             case ESCOLHA_NENHUMA_OU_FECHOU:
                 deveContinuar = false;
                 break;
         }
     }
-
     CloseWindow(); 
     return 0;
 }
 
-// --- Implementações das funções ---
 
-// --- ATUALIZADO: ExecutarJogoBattle (aceita 'settings') ---
 void ExecutarJogoBattle(BattleSettings settings) {
     
-    InicializarMapa(); // (Futuramente, pode usar settings.mapIndex aqui)
+    // --- CORREÇÃO AQUI (Linha 62) ---
+    InicializarMapa(); 
+    // --- FIM DA CORREÇÃO ---
     
-    // --- Lógica de Criação de Jogadores baseada nas Configurações ---
-    // (settings.extras ainda não está a ser usado)
+    bool j1_ehHumano = true;
+    bool j4_ehHumano = (settings.numPlayers == 2); 
     
-    // Jogador 1 (Sempre Humano)
-    Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco", false); 
-
-    // Jogador 2 (Humano ou Bot)
-    bool j2_ehBot = (settings.numPlayers == 1);
-    Jogador j2 = CriarJogador(GetPlayerStartPosition(1), "SpriteVermelho", j2_ehBot);
-    
-    // Jogador 3 (Sempre Bot por agora)
-    Jogador j3 = CriarJogador(GetPlayerStartPosition(2), "SpriteAzul", true);
-    
-    // Jogador 4 (Sempre Bot por agora)
-    Jogador j4 = CriarJogador(GetPlayerStartPosition(3), "SpritePreto", true);
-    // --- FIM DA LÓGICA DE CRIAÇÃO ---
-    
+    Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco", !j1_ehHumano); 
+    Jogador j2 = CriarJogador(GetPlayerStartPosition(1), "SpriteVermelho", true);      
+    Jogador j3 = CriarJogador(GetPlayerStartPosition(2), "SpriteAzul", true);      
+    Jogador j4 = CriarJogador(GetPlayerStartPosition(3), "SpritePreto", !j4_ehHumano); 
     
     Jogador* todosJogadores[] = {&j1, &j2, &j3, &j4};
     int numJogadores = 4;
-
     NodeBombas gBombas = CriarNodeBombas();
     NodeExplosoes gExplosoes = CriarNodeExplosoes();
 
@@ -108,56 +81,40 @@ void ExecutarJogoBattle(BattleSettings settings) {
         
         float deltaTime = GetFrameTime(); 
 
-        // --- ATUALIZADO: Controles do Jogador 2 ---
         AtualizarJogador(&j1, KEY_W, KEY_S, KEY_A, KEY_D, KEY_SPACE, &gBombas, deltaTime); 
-        
-        if (j2_ehBot) {
-            // J2 é Bot
-            AtualizarJogador(&j2, 0, 0, 0, 0, 0, &gBombas, deltaTime);
+        AtualizarJogador(&j2, 0, 0, 0, 0, 0, &gBombas, deltaTime);
+        AtualizarJogador(&j3, 0, 0, 0, 0, 0, &gBombas, deltaTime); 
+        if (j4_ehHumano) { 
+            AtualizarJogador(&j4, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_J, &gBombas, deltaTime);
         } else {
-            // J2 é Humano
-            AtualizarJogador(&j2, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_RIGHT_CONTROL, &gBombas, deltaTime);
+            AtualizarJogador(&j4, 0, 0, 0, 0, 0, &gBombas, deltaTime);
         }
-        
-        AtualizarJogador(&j3, 0, 0, 0, 0, 0, &gBombas, deltaTime); // Bot
-        AtualizarJogador(&j4, 0, 0, 0, 0, 0, &gBombas, deltaTime); // Bot
-        // --- FIM DA ATUALIZAÇÃO ---
 
         AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadores);
         AtualizarExplosoes(&gExplosoes, deltaTime);
 
-        // --- Lógica de Vitória/Derrota ---
-        // Se o J1 morreu, ou se o J1 e J2 (humanos) morreram
         bool humanosVivos = j1.vivo;
-        if (!j2_ehBot) humanosVivos = humanosVivos || j2.vivo; // Se J2 é humano, verifica se ele está vivo
-
+        if (j4_ehHumano) humanosVivos = humanosVivos || j4.vivo;
         if (!humanosVivos) {
             ExecutarTelaDerrota(); 
             break; 
         }
-        
-        // Se J1 (e J2, se humano) estão vivos, mas todos os bots morreram
-        bool botsVivos = j3.vivo || j4.vivo;
-        if (j2_ehBot) botsVivos = botsVivos || j2.vivo; // Se J2 é bot, inclui-o na verificação
-
+        bool botsVivos = j2.vivo || j3.vivo;
+        if (!j4_ehHumano) botsVivos = botsVivos || j4.vivo;
         if (humanosVivos && !botsVivos) {
             ExecutarTelaVitoria();
             break;
         }
-        // --- FIM DA LÓGICA ---
 
         BeginDrawing(); 
             ClearBackground(BLACK);
             DesenharMapa();
-            
             DesenharJogador(&j1);
             DesenharJogador(&j2);
             DesenharJogador(&j3);
             DesenharJogador(&j4);
-
             DesenharBombas(&gBombas);
             DesenharExplosoes(&gExplosoes);
-
         EndDrawing();
     }
     
@@ -173,8 +130,10 @@ void ExecutarJogoBattle(BattleSettings settings) {
 
 void ExecutarJogoStory(void)
 {
-    // (Sem alteração)
+    // --- CORREÇÃO AQUI (Linha 156) ---
     InicializarMapa(); 
+    // --- FIM DA CORREÇÃO ---
+    
     Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco", false); 
     Jogador* todosJogadores[] = {&j1};
     int numJogadores = 1;
@@ -185,7 +144,10 @@ void ExecutarJogoStory(void)
     {
         if (IsKeyPressed(KEY_ESCAPE)) break;
         float deltaTime = GetFrameTime(); 
+        
+        // (Esta linha já estava correta da última vez, sem KEYD)
         AtualizarJogador(&j1, KEY_W, KEY_S, KEY_A, KEY_D, KEY_SPACE, &gBombas, deltaTime);
+
         AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadores);
         AtualizarExplosoes(&gExplosoes, deltaTime);
         if (!j1.vivo) {
@@ -206,7 +168,6 @@ void ExecutarJogoStory(void)
     UnloadExplosoes(&gExplosoes);
 }
 
-// --- Funções Placeholder (sem alteração) ---
 void ExecutarShop(void) {
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_ESCAPE)) break;
