@@ -9,6 +9,7 @@
 #include "derrota.h"    
 #include "vitoria.h"    
 #include <stdbool.h>
+#include <stddef.h>     // <-- CORREÇÃO: Adicionada esta linha
 
 const int SCREEN_WIDTH = 1440;
 const int SCREEN_HEIGHT = 900;
@@ -59,9 +60,7 @@ int main(void)
 
 void ExecutarJogoBattle(BattleSettings settings) {
     
-    // --- CORREÇÃO AQUI (Linha 62) ---
     InicializarMapa(); 
-    // --- FIM DA CORREÇÃO ---
     
     bool j1_ehHumano = true;
     bool j4_ehHumano = (settings.numPlayers == 2); 
@@ -75,54 +74,52 @@ void ExecutarJogoBattle(BattleSettings settings) {
     int numJogadores = 4;
     NodeBombas gBombas = CriarNodeBombas();
     NodeExplosoes gExplosoes = CriarNodeExplosoes();
+    
+    Jogador* p1_target = &j1;
+    Jogador* p2_target = (j4_ehHumano) ? &j4 : NULL; // (Linha 79, agora válida)
 
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_ESCAPE)) break;
         
         float deltaTime = GetFrameTime(); 
 
-        AtualizarJogador(&j1, KEY_W, KEY_S, KEY_A, KEY_D, KEY_SPACE, &gBombas, deltaTime); 
-        AtualizarJogador(&j2, 0, 0, 0, 0, 0, &gBombas, deltaTime);
-        AtualizarJogador(&j3, 0, 0, 0, 0, 0, &gBombas, deltaTime); 
+        AtualizarJogador(&j1, KEY_W, KEY_S, KEY_A, KEY_D, KEY_SPACE, &gBombas, deltaTime, p1_target, p2_target); 
+        AtualizarJogador(&j2, 0, 0, 0, 0, 0, &gBombas, deltaTime, p1_target, p2_target);
+        AtualizarJogador(&j3, 0, 0, 0, 0, 0, &gBombas, deltaTime, p1_target, p2_target); 
+        
         if (j4_ehHumano) { 
-            AtualizarJogador(&j4, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_J, &gBombas, deltaTime);
+            AtualizarJogador(&j4, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_J, &gBombas, deltaTime, p1_target, p2_target);
         } else {
-            AtualizarJogador(&j4, 0, 0, 0, 0, 0, &gBombas, deltaTime);
+            AtualizarJogador(&j4, 0, 0, 0, 0, 0, &gBombas, deltaTime, p1_target, p2_target);
         }
 
         AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadores);
         AtualizarExplosoes(&gExplosoes, deltaTime);
 
-        bool humanosVivos = j1.vivo;
-        if (j4_ehHumano) humanosVivos = humanosVivos || j4.vivo;
-        if (!humanosVivos) {
-            ExecutarTelaDerrota(); 
-            break; 
-        }
-        bool botsVivos = j2.vivo || j3.vivo;
-        if (!j4_ehHumano) botsVivos = botsVivos || j4.vivo;
-        if (humanosVivos && !botsVivos) {
-            ExecutarTelaVitoria();
-            break;
+        // Lógica de Vitória/Derrota (Sem alteração)
+        if (settings.numPlayers == 1) {
+            if (!j1.vivo) { ExecutarTelaDerrota(); break; }
+            if (j1.vivo && !j2.vivo && !j3.vivo && !j4.vivo) { ExecutarTelaVitoria(); break; }
+        } else { // 2 Players
+            bool p1_vivo = j1.vivo;
+            bool p2_vivo = j4.vivo; 
+            if (!p1_vivo && !p2_vivo) { ExecutarTelaDerrota(); break; }
+            else if ( (p1_vivo && !p2_vivo) || (!p1_vivo && p2_vivo) ) { ExecutarTelaVitoria(); break; }
         }
 
         BeginDrawing(); 
             ClearBackground(BLACK);
             DesenharMapa();
-            DesenharJogador(&j1);
-            DesenharJogador(&j2);
-            DesenharJogador(&j3);
-            DesenharJogador(&j4);
+            DesenharJogador(&j1); DesenharJogador(&j2);
+            DesenharJogador(&j3); DesenharJogador(&j4);
             DesenharBombas(&gBombas);
             DesenharExplosoes(&gExplosoes);
         EndDrawing();
     }
     
     DescarregarMapa(); 
-    DestruirJogador(&j1);
-    DestruirJogador(&j2);
-    DestruirJogador(&j3);
-    DestruirJogador(&j4);
+    DestruirJogador(&j1); DestruirJogador(&j2);
+    DestruirJogador(&j3); DestruirJogador(&j4);
     UnloadBombas(&gBombas);
     UnloadExplosoes(&gExplosoes);
 }
@@ -130,9 +127,7 @@ void ExecutarJogoBattle(BattleSettings settings) {
 
 void ExecutarJogoStory(void)
 {
-    // --- CORREÇÃO AQUI (Linha 156) ---
     InicializarMapa(); 
-    // --- FIM DA CORREÇÃO ---
     
     Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco", false); 
     Jogador* todosJogadores[] = {&j1};
@@ -140,13 +135,15 @@ void ExecutarJogoStory(void)
     NodeBombas gBombas = CriarNodeBombas();
     NodeExplosoes gExplosoes = CriarNodeExplosoes();
     
+    Jogador* p1_target = &j1;
+    Jogador* p2_target = NULL; // (Linha 156, agora válida)
+    
     while (!WindowShouldClose())
     {
         if (IsKeyPressed(KEY_ESCAPE)) break;
         float deltaTime = GetFrameTime(); 
         
-        // (Esta linha já estava correta da última vez, sem KEYD)
-        AtualizarJogador(&j1, KEY_W, KEY_S, KEY_A, KEY_D, KEY_SPACE, &gBombas, deltaTime);
+        AtualizarJogador(&j1, KEY_W, KEY_S, KEY_A, KEY_D, KEY_SPACE, &gBombas, deltaTime, p1_target, p2_target);
 
         AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadores);
         AtualizarExplosoes(&gExplosoes, deltaTime);
