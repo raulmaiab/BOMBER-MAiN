@@ -101,7 +101,7 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
     return j;
 }
 
-// --- ATUALIZADO: AtualizarJogador (IA v11) ---
+// --- ATUALIZADO: AtualizarJogador (IA v14) ---
 void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRight, int keyBomb, 
                       NodeBombas *gBombas, float deltaTime, 
                       Jogador* targetHuman1, Jogador* targetHuman2)
@@ -122,95 +122,95 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
         
         switch (j->botState)
         {
+            // --- ATUALIZADO: Estado WANDERING ---
             case BOT_STATE_WANDERING:
             {
+                if (j->bombaCooldown <= 0.0f) 
+                {
+                    Vector2 myGridPos = GetGridPosFromPixels(j->pos);
+                    int gridX = (int)myGridPos.x;
+                    int gridY = (int)myGridPos.y;
+
+                    // --- 1. Constraints (Verificações de Segurança) ---
+
+                    // C1: Rota de Fuga
+                    int safeDir = -1;
+                    if (GetTileTipo(gridX, gridY - 1) == TILE_EMPTY) safeDir = 0; 
+                    else if (GetTileTipo(gridX, gridY + 1) == TILE_EMPTY) safeDir = 1; 
+                    else if (GetTileTipo(gridX - 1, gridY) == TILE_EMPTY) safeDir = 2; 
+                    else if (GetTileTipo(gridX + 1, gridY) == TILE_EMPTY) safeDir = 3; 
+
+                    // C2: Vértices
+                    bool isAtExtremity = false;
+                    if ((gridX == 1 && gridY == 1) || (gridX == 1 && gridY == 2) || (gridX == 2 && gridY == 1)) { isAtExtremity = true; }
+                    else if ((gridX == MAP_GRID_WIDTH - 2 && gridY == 1) || (gridX == MAP_GRID_WIDTH - 3 && gridY == 1) || (gridX == MAP_GRID_WIDTH - 2 && gridY == 2)) { isAtExtremity = true; }
+                    else if ((gridX == 1 && gridY == MAP_GRID_HEIGHT - 2) || (gridX == 1 && gridY == MAP_GRID_HEIGHT - 3) || (gridX == 2 && gridY == MAP_GRID_HEIGHT - 2)) { isAtExtremity = true; }
+                    else if ((gridX == MAP_GRID_WIDTH - 2 && gridY == MAP_GRID_HEIGHT - 2) || (gridX == MAP_GRID_WIDTH - 3 && gridY == MAP_GRID_HEIGHT - 2) || (gridX == MAP_GRID_WIDTH - 2 && gridY == MAP_GRID_HEIGHT - 3)) { isAtExtremity = true; }
+                    
+                    // C3 (NOVO): Perto de wallb.png
+                    bool isNearDestructible = false;
+                    if (GetTileTipo(gridX, gridY - 1) == TILE_DESTRUCTIBLE) isNearDestructible = true;
+                    else if (GetTileTipo(gridX, gridY + 1) == TILE_DESTRUCTIBLE) isNearDestructible = true;
+                    else if (GetTileTipo(gridX - 1, gridY) == TILE_DESTRUCTIBLE) isNearDestructible = true;
+                    else if (GetTileTipo(gridX + 1, gridY) == TILE_DESTRUCTIBLE) isNearDestructible = true;
+
+                    // --- 2. Decisão de Ação ---
+                    // Se TODOS os constraints de segurança forem verdadeiros
+                    if (safeDir != -1 && !isAtExtremity && isNearDestructible)
+                    {
+                        // O bot está seguro E tem um motivo (quebrar o bloco).
+                        // Ele pode plantar. (A lógica de caçar o jogador torna-se
+                        // secundária, pois quebrar blocos é a prioridade).
+                        
+                        AlinharEPlantarBomba(j, gBombas); 
+                        j->bombaCooldown = BOMBA_COOLDOWN_TEMPO;
+                        j->botState = BOT_STATE_FLEEING;
+                        j->botStateTimer = BOMBA_COOLDOWN_TEMPO; 
+                        j->botMoveDirecao = safeDir; 
+                        j->botLastBombPos = (Vector2){ (float)gridX * TILE_SIZE, (float)gridY * TILE_SIZE };
+                        break; // Sai do switch (pula o movimento)
+                    }
+
+                    // (Opcional: Se quiser que ele cace MESMO que não haja blocos,
+                    // pode adicionar a lógica de "caça" aqui fora do if 'isNearDestructible')
+                    
+                } // Fim do check de cooldown
+
+                // --- 3. Movimento Padrão (Vaguear) ---
                 if (j->botStateTimer <= 0.0f)
                 {
-                    j->botStateTimer = (float)GetRandomValue(5, 20) / 10.0f; 
+                    j->botStateTimer = (float)GetRandomValue(5, 20) / 10.0f;
                     j->botMoveDirecao = GetRandomValue(0, 4); 
-
-                    if (j->bombaCooldown <= 0.0f)
-                    {
-                        Vector2 myGridPos = GetGridPosFromPixels(j->pos);
-                        int gridX = (int)myGridPos.x;
-                        int gridY = (int)myGridPos.y;
-                        
-                        // --- NOVA LÓGICA DE DECISÃO (Bot v11) ---
-                        
-                        // 1. Constraint: Must be near a breakable block
-                        bool isNearDestructible = false;
-                        if (GetTileTipo(gridX, gridY - 1) == TILE_DESTRUCTIBLE) isNearDestructible = true;
-                        else if (GetTileTipo(gridX, gridY + 1) == TILE_DESTRUCTIBLE) isNearDestructible = true;
-                        else if (GetTileTipo(gridX - 1, gridY) == TILE_DESTRUCTIBLE) isNearDestructible = true;
-                        else if (GetTileTipo(gridX + 1, gridY) == TILE_DESTRUCTIBLE) isNearDestructible = true;
-
-                        // 2. Constraint: Must not be in a corner
-                        bool isAtExtremity = false;
-                        if ((gridX == 1 && gridY == 1) || (gridX == 1 && gridY == 2) || (gridX == 2 && gridY == 1)) { isAtExtremity = true; }
-                        else if ((gridX == MAP_GRID_WIDTH - 2 && gridY == 1) || (gridX == MAP_GRID_WIDTH - 3 && gridY == 1) || (gridX == MAP_GRID_WIDTH - 2 && gridY == 2)) { isAtExtremity = true; }
-                        else if ((gridX == 1 && gridY == MAP_GRID_HEIGHT - 2) || (gridX == 1 && gridY == MAP_GRID_HEIGHT - 3) || (gridX == 2 && gridY == MAP_GRID_HEIGHT - 2)) { isAtExtremity = true; }
-                        else if ((gridX == MAP_GRID_WIDTH - 2 && gridY == MAP_GRID_HEIGHT - 2) || (gridX == MAP_GRID_WIDTH - 3 && gridY == MAP_GRID_HEIGHT - 2) || (gridX == MAP_GRID_WIDTH - 2 && gridY == MAP_GRID_HEIGHT - 3)) { isAtExtremity = true; }
-                        
-                        // 3. Constraint: Must have a flee route
-                        int safeDir = -1;
-                        if (GetTileTipo(gridX, gridY - 1) == TILE_EMPTY) safeDir = 0; 
-                        else if (GetTileTipo(gridX, gridY + 1) == TILE_EMPTY) safeDir = 1; 
-                        else if (GetTileTipo(gridX - 1, gridY) == TILE_EMPTY) safeDir = 2; 
-                        else if (GetTileTipo(gridX + 1, gridY) == TILE_EMPTY) safeDir = 3; 
-
-                        // Se for seguro plantar (Passou os 3 constraints)
-                        if (isNearDestructible && !isAtExtremity && safeDir != -1)
-                        {
-                            bool shouldPlant = false;
-
-                            // 4. Trigger 1: Aggressive (Player is near)
-                            if (target != NULL) {
-                                Vector2 targetGridPos = GetGridPosFromPixels(target->pos);
-                                bool isAligned = ((int)myGridPos.x == (int)targetGridPos.x || (int)myGridPos.y == (int)targetGridPos.y);
-                                bool isClose = (Vector2Distance(j->pos, target->pos) < TILE_SIZE * 4);
-                                if (isAligned && isClose) shouldPlant = true;
-                            }
-
-                            // 5. Trigger 2: Passive (Just wants to break the block)
-                            if (!shouldPlant && GetRandomValue(0, 100) > 90) { // 10% chance
-                                shouldPlant = true;
-                            }
-                            
-                            // 6. Final Decision
-                            if (shouldPlant)
-                            {
-                                AlinharEPlantarBomba(j, gBombas); 
-                                j->bombaCooldown = BOMBA_COOLDOWN_TEMPO;
-                                j->botState = BOT_STATE_FLEEING;
-                                j->botStateTimer = BOMBA_COOLDOWN_TEMPO; 
-                                j->botMoveDirecao = safeDir; 
-                                j->botLastBombPos = (Vector2){ (float)gridX * TILE_SIZE, (float)gridY * TILE_SIZE };
-                                break; // Sai do switch
-                            }
-                        } // Fim dos checks de segurança
-                    } // Fim do check de cooldown
-                } // Fim do check de timer
+                }
                 break; 
             }
             // --- FIM DA ATUALIZAÇÃO ---
 
-            // Estados FLEEING e HOLDING (Sem alteração)
+            // --- ATUALIZADO: Estado FLEEING (Fugindo) ---
             case BOT_STATE_FLEEING:
             {
                 Vector2 myGridPos = GetGridPosFromPixels(j->pos);
                 Vector2 bombGridPos = GetGridPosFromPixels(j->botLastBombPos);
                 int dist = abs((int)myGridPos.x - (int)bombGridPos.x) + abs((int)myGridPos.y - (int)bombGridPos.y);
-                int bombRange = 1;
-                int safeDist = bombRange + 2; // 3
+                
+                // --- CORREÇÃO AQUI ---
+                int bombRange = 1; // (Assume que o range é 1)
+                int safeDist = bombRange + 3; // (1 + 3 = 4)
+                // --- FIM DA CORREÇÃO ---
 
+                // Se a distância for 4 ou mais, estamos seguros.
                 if (dist >= safeDist)
                 {
                     j->botState = BOT_STATE_HOLDING; 
                     j->botStateTimer = BOMBA_COOLDOWN_TEMPO - 0.5f; 
                     j->botMoveDirecao = 4; // PARAR
                 }
+                
                 break;
             }
+            // --- FIM DA ATUALIZAÇÃO ---
+
+            // HOLDING (Sem alteração)
             case BOT_STATE_HOLDING:
             {
                 j->botMoveDirecao = 4; 
