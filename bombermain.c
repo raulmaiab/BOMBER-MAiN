@@ -17,9 +17,15 @@
 const int SCREEN_WIDTH = 1440;
 const int SCREEN_HEIGHT = 900;
 
+<<<<<<< HEAD
 // Assinaturas
 OptionsAction ExecutarJogoBattle(BattleSettings settings);
 OptionsAction ExecutarJogoStory(StorySettings settings); 
+=======
+// Declarações 
+void ExecutarJogoBattle(BattleSettings settings);
+void ExecutarJogoStory(void);
+>>>>>>> 9319279 (...)
 void ExecutarShop(void);
 void ExecutarOther(void);
 
@@ -165,8 +171,21 @@ OptionsAction ExecutarJogoBattle(BattleSettings settings) {
             VerificarColetaExtras(&j3);
             VerificarColetaExtras(&j4);
 
+<<<<<<< HEAD
             AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadores);
             AtualizarExplosoes(&gExplosoes, deltaTime);
+=======
+        // Lógica de Vitória/Derrota 
+        if (settings.numPlayers == 1) {
+            if (!j1.vivo) { ExecutarTelaDerrota(); break; }
+            if (j1.vivo && !j2.vivo && !j3.vivo && !j4.vivo) { ExecutarTelaVitoria(); break; }
+        } else { // 2 Players
+            bool p1_vivo = j1.vivo;
+            bool p2_vivo = j4.vivo; 
+            if (!p1_vivo && !p2_vivo) { ExecutarTelaDerrota(); break; }
+            else if ( (p1_vivo && !p2_vivo) || (!p1_vivo && p2_vivo) ) { ExecutarTelaVitoria(); break; }
+        }
+>>>>>>> 9319279 (...)
 
             // Lógica de Vitória/Derrota
             if (settings.numPlayers == 1) {
