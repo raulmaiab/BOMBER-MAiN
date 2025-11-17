@@ -59,11 +59,15 @@ int main(void)
 
 void ExecutarJogoBattle(BattleSettings settings) {
     
-    // --- ATUALIZADO: Lógica de Seleção de Mapa ---
+    // --- ATUALIZADO: Lógica de Seleção de Mapa (Inclui PirateBoat) ---
     if (settings.mapIndex == 1) {
-        InicializarMapa("Cave"); // Carrega da pasta Cave
-    } else {
-        InicializarMapa("Default"); // Carrega da pasta Default (mapIndex 0 ou outros)
+        InicializarMapa("Cave");
+    } 
+    else if (settings.mapIndex == 2) {
+        InicializarMapa("PirateBoat"); // Carrega da nova pasta
+    } 
+    else {
+        InicializarMapa("Default");
     }
     // --- FIM DA ATUALIZAÇÃO ---
     
@@ -132,7 +136,6 @@ void ExecutarJogoBattle(BattleSettings settings) {
 
 void ExecutarJogoStory(void)
 {
-    // Story Mode usa Default por enquanto
     InicializarMapa("Default"); 
     
     Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco", false); 
