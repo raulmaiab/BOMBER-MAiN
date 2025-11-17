@@ -1,113 +1,30 @@
 #include "extras.h"
-#include "mapa.h"
-#include <stdlib.h>
+#include "raylib.h"
+#include "raymath.h" 
+#include "mapa.h"    
+#include <stdlib.h> 
 
 static Texture2D texRange;
 static Texture2D texDefense;
 static Texture2D texSpeed;
 
-static ExtraItem extras[MAX_EXTRAS];
+static ExtraItem extras[MAX_EXTRAS]; 
+static int quantidadeExtras = 0;
 
 void InicializarExtras(void)
 {
-    // Carrega as imagens da pasta "extras"
     texRange = LoadTexture("extras/range.png");
     texDefense = LoadTexture("extras/defense.png");
     texSpeed = LoadTexture("extras/speed.png");
 
-    // Limpa o array
+    if (texRange.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar extras/range.png");
+    if (texDefense.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar extras/defense.png");
+    if (texSpeed.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar extras/speed.png");
+
     for (int i = 0; i < MAX_EXTRAS; i++) {
         extras[i].ativo = false;
     }
-}
-
-void SpawnarExtra(Vector2 pixelPos)
-{
-    // 1. Chance de Drop (ex: 25%)
-    if (GetRandomValue(0, 100) > 25) return; 
-
-    // 2. Encontrar slot vazio
-    int slot = -1;
-    for (int i = 0; i < MAX_EXTRAS; i++) {
-        if (!extras[i].ativo) {
-            slot = i;
-            break;
-        }
-    }
-    if (slot == -1) return; // Não há espaço
-
-    // 3. Definir tipo aleatório
-    int r = GetRandomValue(0, 2);
-    ExtraType tipo = EXTRA_RANGE;
-    if (r == 1) tipo = EXTRA_DEFENSE;
-    if (r == 2) tipo = EXTRA_SPEED;
-
-    // 4. Criar
-    extras[slot].pos = pixelPos;
-    extras[slot].type = tipo;
-    extras[slot].ativo = true;
-}
-
-void DesenharExtras(void)
-{
-    for (int i = 0; i < MAX_EXTRAS; i++) {
-        if (extras[i].ativo) {
-            Texture2D* t = NULL;
-            switch(extras[i].type) {
-                case EXTRA_RANGE: t = &texRange; break;
-                case EXTRA_DEFENSE: t = &texDefense; break;
-                case EXTRA_SPEED: t = &texSpeed; break;
-                default: break;
-            }
-            
-            if (t && t->id > 0) {
-                // Desenha centralizado no tile (assumindo texturas menores ou iguais ao tile)
-                float offset = (TILE_SIZE - t->width) / 2.0f; 
-                DrawTexture(*t, extras[i].pos.x + offset, extras[i].pos.y + offset, WHITE);
-            } else {
-                // Fallback se não tiver png: Círculos coloridos
-                Color c = WHITE;
-                if (extras[i].type == EXTRA_RANGE) c = RED;
-                if (extras[i].type == EXTRA_DEFENSE) c = BLUE;
-                if (extras[i].type == EXTRA_SPEED) c = GREEN;
-                DrawCircle(extras[i].pos.x + TILE_SIZE/2, extras[i].pos.y + TILE_SIZE/2, 15, c);
-            }
-        }
-    }
-}
-
-void VerificarColetaExtras(Jogador* j)
-{
-    if (!j->vivo) return;
-
-    // Rectangle do jogador (um pouco menor para não pegar de raspão)
-    Rectangle recJog = { j->pos.x + 10, j->pos.y + 10, TILE_SIZE - 20, TILE_SIZE - 20 };
-
-    for (int i = 0; i < MAX_EXTRAS; i++) {
-        if (extras[i].ativo) {
-            Rectangle recItem = { extras[i].pos.x, extras[i].pos.y, TILE_SIZE, TILE_SIZE };
-            
-            if (CheckCollisionRecs(recJog, recItem)) {
-                // --- APLICAR EFEITO ---
-                switch(extras[i].type) {
-                    case EXTRA_RANGE:
-                        j->bombRange++; // Permanente na partida
-                        break;
-                    case EXTRA_DEFENSE:
-                        j->temDefesa = true;
-                        j->timerDefesa = 10.0f; // 10 segundos
-                        break;
-                    case EXTRA_SPEED:
-                        j->temVelocidade = true;
-                        j->timerVelocidade = 10.0f; // 10 segundos
-                        break;
-                    default: break;
-                }
-                // Consome o item
-                extras[i].ativo = false;
-            }
-        }
-    }
+    quantidadeExtras = 0; 
 }
 
 void DescarregarExtras(void)
@@ -115,4 +32,121 @@ void DescarregarExtras(void)
     UnloadTexture(texRange);
     UnloadTexture(texDefense);
     UnloadTexture(texSpeed);
+}
+
+void SpawnarExtra(Vector2 pos)
+{
+    if (GetRandomValue(0, 99) >= 30) return; 
+
+    if (quantidadeExtras >= MAX_EXTRAS) return;
+
+    int slot = -1;
+    for (int i = 0; i < MAX_EXTRAS; i++) {
+        if (!extras[i].ativo) {
+            slot = i;
+            break;
+        }
+    }
+
+    if (slot == -1) return; 
+
+    extras[slot].pos = pos;
+    extras[slot].ativo = true;
+    extras[slot].type = GetRandomValue(0, EXTRA_MAX - 1); 
+    quantidadeExtras++; 
+}
+
+// --- NOVO: Função para IA ---
+bool GetExtraMaisProximo(Vector2 posJogador, float raioBusca, Vector2* posOut)
+{
+    int melhorIndice = -1;
+    float menorDistancia = raioBusca; // Começa com o raio máximo aceitável
+
+    // Centro do jogador
+    Vector2 centerJ = { posJogador.x + TILE_SIZE/2.0f, posJogador.y + TILE_SIZE/2.0f };
+
+    for (int i = 0; i < MAX_EXTRAS; i++) 
+    {
+        if (extras[i].ativo) {
+            // Centro do extra
+            Vector2 centerE = { extras[i].pos.x + TILE_SIZE/2.0f, extras[i].pos.y + TILE_SIZE/2.0f };
+            
+            float dist = Vector2Distance(centerJ, centerE);
+            
+            if (dist < menorDistancia) {
+                menorDistancia = dist;
+                melhorIndice = i;
+            }
+        }
+    }
+
+    if (melhorIndice != -1) {
+        *posOut = extras[melhorIndice].pos;
+        return true;
+    }
+    return false;
+}
+// ----------------------------
+
+void VerificarColetaExtras(Jogador* j)
+{
+    if (!j || !j->vivo) return;
+
+    Vector2 playerCenter = { j->pos.x + TILE_SIZE / 2.0f, j->pos.y + TILE_SIZE / 2.0f };
+
+    for (int i = 0; i < MAX_EXTRAS; i++) {
+        if (!extras[i].ativo) continue;
+
+        Vector2 extraCenter = { extras[i].pos.x + TILE_SIZE / 2.0f, extras[i].pos.y + TILE_SIZE / 2.0f };
+
+        float distancia = Vector2Distance(playerCenter, extraCenter);
+
+        if (distancia < TILE_SIZE / 2.0f) { 
+            switch (extras[i].type) {
+                case EXTRA_RANGE:
+                    j->bombRange++; 
+                    // TraceLog(LOG_INFO, "Jogador coletou Range.");
+                    break;
+                case EXTRA_DEFENSE:
+                    j->temDefesa = true;
+                    j->timerDefesa = 10.0f; 
+                    // TraceLog(LOG_INFO, "Jogador coletou Defesa.");
+                    break;
+                case EXTRA_SPEED:
+                    j->temVelocidade = true;
+                    j->timerVelocidade = 10.0f; 
+                    // TraceLog(LOG_INFO, "Jogador coletou Velocidade.");
+                    break;
+                default: break;
+            }
+            extras[i].ativo = false; 
+            quantidadeExtras--;      
+        }
+    }
+}
+
+void DesenharExtras(void)
+{
+    Vector2 origin = { 0, 0 };
+    for (int i = 0; i < MAX_EXTRAS; i++) {
+        if (!extras[i].ativo) continue;
+
+        Texture2D *t = NULL; 
+        Color c = WHITE;     
+
+        switch (extras[i].type) {
+            case EXTRA_RANGE:    t = &texRange; c = RED; break;
+            case EXTRA_DEFENSE:  t = &texDefense; c = BLUE; break;
+            case EXTRA_SPEED:    t = &texSpeed; c = GREEN; break;
+            default: break;
+        }
+
+        if (t && t->id > 0) { 
+            Rectangle sourceRec = { 0.0f, 0.0f, (float)t->width, (float)t->height };
+            Rectangle destRec = { extras[i].pos.x, extras[i].pos.y, TILE_SIZE, TILE_SIZE };
+            DrawTexturePro(*t, sourceRec, destRec, origin, 0.0f, WHITE);
+        } else { 
+            DrawCircle(extras[i].pos.x + TILE_SIZE / 2, extras[i].pos.y + TILE_SIZE / 2, TILE_SIZE / 3, c);
+        }
+    }
 }

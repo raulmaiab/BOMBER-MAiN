@@ -2,28 +2,33 @@
 #define EXTRAS_H
 
 #include "raylib.h"
-#include "jogador.h" // Precisa conhecer o Jogador para modificar seus status
+#include "jogador.h" 
 
 typedef enum {
-    EXTRA_NONE,
-    EXTRA_RANGE,    // Aumenta explosão (Permanente)
-    EXTRA_DEFENSE,  // Escudo (Tempo limitado)
-    EXTRA_SPEED     // Velocidade (Tempo limitado)
+    EXTRA_RANGE,    // 0
+    EXTRA_DEFENSE,  // 1
+    EXTRA_SPEED,    // 2
+    EXTRA_MAX       // 3
 } ExtraType;
 
 typedef struct {
     Vector2 pos;
     ExtraType type;
     bool ativo;
-} ExtraItem;
+} ExtraItem; 
 
-// Configuração máxima de extras simultâneos no mapa
 #define MAX_EXTRAS 20 
 
 void InicializarExtras(void);
-void SpawnarExtra(Vector2 gridPos); // Tenta criar um extra numa posição (chance aleatória)
+void SpawnarExtra(Vector2 pixelPos); 
 void DesenharExtras(void);
-void VerificarColetaExtras(Jogador* j); // Verifica se o jogador pegou algo
+void VerificarColetaExtras(Jogador* j); 
 void DescarregarExtras(void);
+
+// --- NOVO: Função para a IA encontrar itens ---
+// Retorna true se achou algum item dentro do raio.
+// Preenche 'posOut' com a posição do item mais próximo.
+bool GetExtraMaisProximo(Vector2 posJogador, float raioBusca, Vector2* posOut);
+// ----------------------------------------------
 
 #endif // EXTRAS_H

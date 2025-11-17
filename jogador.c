@@ -3,6 +3,7 @@
 #include "raymath.h" 
 #include "mapa.h"   
 #include "bomba.h" 
+#include "extras.h" 
 #include <stdio.h> 
 #include <float.h> 
 #include <stdlib.h> 
@@ -12,15 +13,24 @@
 
 // --- Funções Ajudantes ---
 
-// ATUALIZADO: Passa o j->bombRange para a bomba
+static void SnapToGrid(Jogador* j, int direction) {
+    Vector2 center = { j->pos.x + TILE_SIZE/2.0f, j->pos.y + TILE_SIZE/2.0f };
+    Vector2 gridPos = GetGridPosFromPixels(center);
+    
+    if (direction == 0 || direction == 1) { 
+        j->pos.x = gridPos.x * TILE_SIZE;
+    }
+    else if (direction == 2 || direction == 3) { 
+        j->pos.y = gridPos.y * TILE_SIZE;
+    }
+}
+
 static void AlinharEPlantarBomba(Jogador* j, NodeBombas *gBombas) {
     float centerX = j->pos.x + (TILE_SIZE / 2.0f);
     float centerY = j->pos.y + (TILE_SIZE / 2.0f);
     int gridX = (int)(centerX / TILE_SIZE);
     int gridY = (int)(centerY / TILE_SIZE);
     Vector2 posBombaAlinhada = { (float)gridX * TILE_SIZE, (float)gridY * TILE_SIZE };
-    
-    // Usa o range atual do jogador (que pode ter sido aumentado por extras)
     PlantarBomba(gBombas, posBombaAlinhada, j->bombRange); 
 }
 
@@ -33,7 +43,41 @@ static bool IsBombAt(NodeBombas *gBombas, int gridX, int gridY) {
     return false; 
 }
 
-static void MoverJogadorX(Jogador *j, float delta, NodeBombas *gBombas) {
+static bool IsInCorner(int x, int y) {
+    int W = MAP_GRID_WIDTH;
+    int H = MAP_GRID_HEIGHT;
+    if ((x == 1 && y == 1) || (x == 2 && y == 1) || (x == 1 && y == 2)) return true;
+    if ((x == W-2 && y == 1) || (x == W-3 && y == 1) || (x == W-2 && y == 2)) return true;
+    if ((x == 1 && y == H-2) || (x == 2 && y == H-2) || (x == 1 && y == H-3)) return true;
+    if ((x == W-2 && y == H-2) || (x == W-3 && y == H-2) || (x == W-2 && y == H-3)) return true;
+    return false;
+}
+
+// Verifica se é seguro (SEM BOMBA, SEM PAREDE) - Usado no Wandering
+static bool IsDirectionSafe(int startX, int startY, int dir, NodeBombas *gBombas) {
+    int dx = 0, dy = 0;
+    if (dir == 0) dy = -1; else if (dir == 1) dy = 1; else if (dir == 2) dx = -1; else if (dir == 3) dx = 1;  
+    int checkX = startX + dx;
+    int checkY = startY + dy;
+    if (checkX < 0 || checkX >= MAP_GRID_WIDTH || checkY < 0 || checkY >= MAP_GRID_HEIGHT) return false;
+    if (GetTileTipo(checkX, checkY) != TILE_EMPTY) return false;
+    if (IsBombAt(gBombas, checkX, checkY)) return false;
+    return true;
+}
+
+// Verifica APENAS se é chão (IGNORA BOMBAS) - Usado no Fleeing/Panic
+static bool IsDirectionWalkable(int startX, int startY, int dir) {
+    int dx = 0, dy = 0;
+    if (dir == 0) dy = -1; else if (dir == 1) dy = 1; else if (dir == 2) dx = -1; else if (dir == 3) dx = 1;  
+    int checkX = startX + dx;
+    int checkY = startY + dy;
+    if (checkX < 0 || checkX >= MAP_GRID_WIDTH || checkY < 0 || checkY >= MAP_GRID_HEIGHT) return false;
+    // Só importa se é parede ou bloco. Bomba é "andável" na fuga.
+    if (GetTileTipo(checkX, checkY) != TILE_EMPTY) return false; 
+    return true;
+}
+
+static void MoverJogadorX(Jogador *j, float delta, NodeBombas *gBombas, bool ignoreBombs) {
     if (delta == 0) return;
     Vector2 playerCenter = { j->pos.x + TILE_SIZE/2.0f, j->pos.y + TILE_SIZE/2.0f };
     Vector2 playerGridPos = GetGridPosFromPixels(playerCenter);
@@ -44,16 +88,19 @@ static void MoverJogadorX(Jogador *j, float delta, NodeBombas *gBombas) {
     float cY2 = j->pos.y + TILE_SIZE - 1 - COLLISION_MARGIN; 
     Vector2 gPos1 = GetGridPosFromPixels((Vector2){cX, cY1});
     Vector2 gPos2 = GetGridPosFromPixels((Vector2){cX, cY2});
-    bool b1 = IsBombAt(gBombas, (int)gPos1.x, (int)gPos1.y);
+
+    bool b1 = ignoreBombs ? false : IsBombAt(gBombas, (int)gPos1.x, (int)gPos1.y);
     bool p1 = ((int)gPos1.x == (int)playerGridPos.x && (int)gPos1.y == (int)playerGridPos.y);
     bool t1 = (GetTileTipo((int)gPos1.x, (int)gPos1.y) == TILE_EMPTY) && (!b1 || p1);
-    bool b2 = IsBombAt(gBombas, (int)gPos2.x, (int)gPos2.y);
+    
+    bool b2 = ignoreBombs ? false : IsBombAt(gBombas, (int)gPos2.x, (int)gPos2.y);
     bool p2 = ((int)gPos2.x == (int)playerGridPos.x && (int)gPos2.y == (int)playerGridPos.y);
     bool t2 = (GetTileTipo((int)gPos2.x, (int)gPos2.y) == TILE_EMPTY) && (!b2 || p2);
+
     if (t1 && t2) { j->pos.x = posTentativa.x; }
 }
 
-static void MoverJogadorY(Jogador *j, float delta, NodeBombas *gBombas) {
+static void MoverJogadorY(Jogador *j, float delta, NodeBombas *gBombas, bool ignoreBombs) {
     if (delta == 0) return;
     Vector2 playerCenter = { j->pos.x + TILE_SIZE/2.0f, j->pos.y + TILE_SIZE/2.0f };
     Vector2 playerGridPos = GetGridPosFromPixels(playerCenter);
@@ -64,15 +111,17 @@ static void MoverJogadorY(Jogador *j, float delta, NodeBombas *gBombas) {
     float cY = (delta > 0) ? (posTentativa.y+TILE_SIZE-1-COLLISION_MARGIN) : (posTentativa.y+COLLISION_MARGIN);
     Vector2 gPos1 = GetGridPosFromPixels((Vector2){cX1, cY});
     Vector2 gPos2 = GetGridPosFromPixels((Vector2){cX2, cY});
-    bool b1 = IsBombAt(gBombas, (int)gPos1.x, (int)gPos1.y);
+    
+    bool b1 = ignoreBombs ? false : IsBombAt(gBombas, (int)gPos1.x, (int)gPos1.y);
     bool p1 = ((int)gPos1.x == (int)playerGridPos.x && (int)gPos1.y == (int)playerGridPos.y);
     bool t1 = (GetTileTipo((int)gPos1.x, (int)gPos1.y) == TILE_EMPTY) && (!b1 || p1);
-    bool b2 = IsBombAt(gBombas, (int)gPos2.x, (int)gPos2.y);
+    
+    bool b2 = ignoreBombs ? false : IsBombAt(gBombas, (int)gPos2.x, (int)gPos2.y);
     bool p2 = ((int)gPos2.x == (int)playerGridPos.x && (int)gPos2.y == (int)playerGridPos.y);
     bool t2 = (GetTileTipo((int)gPos2.x, (int)gPos2.y) == TILE_EMPTY) && (!b2 || p2);
+
     if (t1 && t2) { j->pos.y = posTentativa.y; }
 }
-
 
 // --- CriarJogador ---
 Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
@@ -106,13 +155,9 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
     j.botLastBombPos = (Vector2){0,0};
     j.bombaCooldown = 0.0f; 
 
-    // --- ATUALIZADO: Inicializa Status dos Power-ups ---
-    j.bombRange = 1;        // Padrão
-    j.temDefesa = false; 
-    j.timerDefesa = 0.0f;
-    j.temVelocidade = false; 
-    j.timerVelocidade = 0.0f;
-    // --------------------------------------------------
+    j.bombRange = 1;
+    j.temDefesa = false; j.timerDefesa = 0.0f;
+    j.temVelocidade = false; j.timerVelocidade = 0.0f;
 
     return j;
 }
@@ -124,23 +169,18 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
 {
     if (!j->vivo) return;
 
-    // --- NOVO: Lógica de Timer dos Power-ups ---
     float speedMultiplier = 1.0f;
-    
     if (j->temVelocidade) {
         j->timerVelocidade -= deltaTime;
-        speedMultiplier = 1.5f; // 50% mais rápido
+        speedMultiplier = 1.5f; 
         if (j->timerVelocidade <= 0.0f) j->temVelocidade = false;
     }
-    
     if (j->temDefesa) {
         j->timerDefesa -= deltaTime;
         if (j->timerDefesa <= 0.0f) j->temDefesa = false;
     }
 
-    // Velocidade real usada neste frame
     float currentSpeed = j->velocidade * speedMultiplier; 
-    // -------------------------------------------
 
     if (j->bombaCooldown > 0.0f) { j->bombaCooldown -= deltaTime; }
     j->botStateTimer -= deltaTime; 
@@ -148,96 +188,170 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
     if (j->ehBot)
     {
         Vector2 posAntes = j->pos; 
-        Jogador* target = NULL;
-        float dist1 = FLT_MAX; float dist2 = FLT_MAX;
-        if (targetHuman1 && targetHuman1->vivo) dist1 = Vector2Distance(j->pos, targetHuman1->pos);
-        if (targetHuman2 && targetHuman2->vivo) dist2 = Vector2Distance(j->pos, targetHuman2->pos);
-        if (dist1 < dist2) target = targetHuman1;
-        else if (dist2 < FLT_MAX) target = targetHuman2;
-        
+        bool acabouDePlantar = false;
+
         switch (j->botState)
         {
-            // WANDERING (IA v14)
+            // --- WANDERING ---
             case BOT_STATE_WANDERING:
             {
+                bool plantouBomba = false;
+
                 if (j->bombaCooldown <= 0.0f) 
                 {
                     Vector2 myGridPos = GetGridPosFromPixels(j->pos);
                     int gridX = (int)myGridPos.x;
                     int gridY = (int)myGridPos.y;
 
-                    int safeDir = -1;
-                    if (GetTileTipo(gridX, gridY - 1) == TILE_EMPTY) safeDir = 0; 
-                    else if (GetTileTipo(gridX, gridY + 1) == TILE_EMPTY) safeDir = 1; 
-                    else if (GetTileTipo(gridX - 1, gridY) == TILE_EMPTY) safeDir = 2; 
-                    else if (GetTileTipo(gridX + 1, gridY) == TILE_EMPTY) safeDir = 3; 
-
-                    bool isAtExtremity = false;
-                    if ((gridX == 1 && gridY == 1) || (gridX == 1 && gridY == 2) || (gridX == 2 && gridY == 1)) isAtExtremity = true;
-                    else if ((gridX == MAP_GRID_WIDTH - 2 && gridY == 1) || (gridX == MAP_GRID_WIDTH - 3 && gridY == 1) || (gridX == MAP_GRID_WIDTH - 2 && gridY == 2)) isAtExtremity = true;
-                    else if ((gridX == 1 && gridY == MAP_GRID_HEIGHT - 2) || (gridX == 1 && gridY == MAP_GRID_HEIGHT - 3) || (gridX == 2 && gridY == MAP_GRID_HEIGHT - 2)) isAtExtremity = true;
-                    else if ((gridX == MAP_GRID_WIDTH - 2 && gridY == MAP_GRID_HEIGHT - 2) || (gridX == MAP_GRID_WIDTH - 3 && gridY == MAP_GRID_HEIGHT - 2) || (gridX == MAP_GRID_WIDTH - 2 && gridY == MAP_GRID_HEIGHT - 3)) isAtExtremity = true;
-                    
-                    bool isNearDestructible = false;
-                    if (GetTileTipo(gridX, gridY - 1) == TILE_DESTRUCTIBLE) isNearDestructible = true;
-                    else if (GetTileTipo(gridX, gridY + 1) == TILE_DESTRUCTIBLE) isNearDestructible = true;
-                    else if (GetTileTipo(gridX - 1, gridY) == TILE_DESTRUCTIBLE) isNearDestructible = true;
-                    else if (GetTileTipo(gridX + 1, gridY) == TILE_DESTRUCTIBLE) isNearDestructible = true;
-
-                    if (safeDir != -1 && !isAtExtremity && isNearDestructible)
+                    if (!IsInCorner(gridX, gridY))
                     {
-                        bool shouldPlant = false;
-                        if (target != NULL) {
-                            Vector2 targetGridPos = GetGridPosFromPixels(target->pos);
-                            bool isAligned = ((int)myGridPos.x == (int)targetGridPos.x || (int)myGridPos.y == (int)targetGridPos.y);
-                            bool isClose = (Vector2Distance(j->pos, target->pos) < TILE_SIZE * 4);
-                            if (isAligned && isClose) shouldPlant = true;
+                        bool triggerAcionado = false;
+                        if (GetTileTipo(gridX, gridY - 1) == TILE_DESTRUCTIBLE || 
+                            GetTileTipo(gridX, gridY + 1) == TILE_DESTRUCTIBLE ||
+                            GetTileTipo(gridX - 1, gridY) == TILE_DESTRUCTIBLE || 
+                            GetTileTipo(gridX + 1, gridY) == TILE_DESTRUCTIBLE) {
+                            triggerAcionado = true;
                         }
-                        if (!shouldPlant && GetRandomValue(0, 100) > 90) {
-                            shouldPlant = true;
-                        }
-                        
-                        if (shouldPlant) 
+
+                        if (triggerAcionado)
                         {
-                            AlinharEPlantarBomba(j, gBombas); 
-                            j->bombaCooldown = BOMBA_COOLDOWN_TEMPO;
-                            j->botState = BOT_STATE_FLEEING;
-                            j->botStateTimer = BOMBA_COOLDOWN_TEMPO; 
-                            j->botMoveDirecao = safeDir; 
-                            j->botLastBombPos = (Vector2){ (float)gridX * TILE_SIZE, (float)gridY * TILE_SIZE };
-                            break; 
+                            int escapeDir = -1;
+                            int oposto = -1;
+                            if (j->botMoveDirecao == 0) oposto = 1;      
+                            else if (j->botMoveDirecao == 1) oposto = 0; 
+                            else if (j->botMoveDirecao == 2) oposto = 3; 
+                            else if (j->botMoveDirecao == 3) oposto = 2; 
+
+                            // Usa IsDirectionSafe (sem bomba) para PLANEJAR
+                            if (oposto != -1 && IsDirectionSafe(gridX, gridY, oposto, gBombas)) {
+                                escapeDir = oposto;
+                            }
+                            else {
+                                if (IsDirectionSafe(gridX, gridY, j->botMoveDirecao, gBombas)) escapeDir = j->botMoveDirecao; 
+                                else if (IsDirectionSafe(gridX, gridY, 0, gBombas)) escapeDir = 0;
+                                else if (IsDirectionSafe(gridX, gridY, 1, gBombas)) escapeDir = 1;
+                                else if (IsDirectionSafe(gridX, gridY, 2, gBombas)) escapeDir = 2;
+                                else if (IsDirectionSafe(gridX, gridY, 3, gBombas)) escapeDir = 3;
+                            }
+
+                            if (escapeDir != -1) 
+                            {
+                                AlinharEPlantarBomba(j, gBombas); 
+                                j->bombaCooldown = BOMBA_COOLDOWN_TEMPO;
+                                j->botState = BOT_STATE_FLEEING;
+                                j->botMoveDirecao = escapeDir; 
+                                j->botLastBombPos = (Vector2){ (float)gridX * TILE_SIZE, (float)gridY * TILE_SIZE };
+                                
+                                SnapToGrid(j, escapeDir); 
+                                plantouBomba = true;
+                                acabouDePlantar = true; 
+                            }
                         }
                     }
                 }
 
-                if (j->botStateTimer <= 0.0f)
+                // Movimento Normal
+                if (!plantouBomba && j->botStateTimer <= 0.0f)
                 {
-                    j->botStateTimer = (float)GetRandomValue(5, 20) / 10.0f;
-                    j->botMoveDirecao = GetRandomValue(0, 4); 
+                    int moveDir = -1;
+                    Vector2 myGridPos = GetGridPosFromPixels(j->pos);
+                    int gx = (int)myGridPos.x;
+                    int gy = (int)myGridPos.y;
+
+                    Vector2 itemPos;
+                    if (GetExtraMaisProximo(j->pos, TILE_SIZE * 6, &itemPos)) {
+                        float dx = itemPos.x - j->pos.x;
+                        float dy = itemPos.y - j->pos.y;
+                        int pH = (dx > 0) ? 3 : 2;
+                        int pV = (dy > 0) ? 1 : 0;
+                        
+                        if (fabs(dx) > fabs(dy)) {
+                            if (IsDirectionSafe(gx, gy, pH, gBombas)) moveDir = pH;
+                            else if (IsDirectionSafe(gx, gy, pV, gBombas)) moveDir = pV;
+                        } else {
+                            if (IsDirectionSafe(gx, gy, pV, gBombas)) moveDir = pV;
+                            else if (IsDirectionSafe(gx, gy, pH, gBombas)) moveDir = pH;
+                        }
+                        j->botStateTimer = 0.2f;
+                    }
+
+                    if (moveDir == -1) {
+                        int validDirs[4];
+                        int count = 0;
+                        if (IsDirectionSafe(gx, gy, 0, gBombas)) validDirs[count++] = 0;
+                        if (IsDirectionSafe(gx, gy, 1, gBombas)) validDirs[count++] = 1;
+                        if (IsDirectionSafe(gx, gy, 2, gBombas)) validDirs[count++] = 2;
+                        if (IsDirectionSafe(gx, gy, 3, gBombas)) validDirs[count++] = 3;
+
+                        if (count > 0) {
+                            if (j->botMoveDirecao >= 0 && j->botMoveDirecao <= 3 && 
+                                IsDirectionSafe(gx, gy, j->botMoveDirecao, gBombas) && 
+                                GetRandomValue(0, 100) > 20) { 
+                                moveDir = j->botMoveDirecao;
+                            } else {
+                                moveDir = validDirs[GetRandomValue(0, count - 1)];
+                            }
+                            j->botStateTimer = (float)GetRandomValue(5, 15) / 10.0f;
+                        } else {
+                            moveDir = 4; 
+                            j->botStateTimer = 0.1f;
+                        }
+                    }
+
+                    if (moveDir != -1) {
+                        bool mudouEixo = (j->botMoveDirecao >= 2 && moveDir <= 1) || (j->botMoveDirecao <= 1 && moveDir >= 2);
+                        if (mudouEixo) SnapToGrid(j, moveDir);
+                        j->botMoveDirecao = moveDir;
+                    }
                 }
                 break; 
             }
             
-            // FLEEING (IA v16 - Inteligente e segura)
+            // --- FLEEING (Fuga com Correção de Travamento) ---
             case BOT_STATE_FLEEING:
             {
                 Vector2 myGridPos = GetGridPosFromPixels(j->pos);
                 Vector2 bombGridPos = GetGridPosFromPixels(j->botLastBombPos);
-
-                int dist = abs((int)myGridPos.x - (int)bombGridPos.x) + abs((int)myGridPos.y - (int)bombGridPos.y);
                 
-                // ATUALIZADO: Usa o range do bot para calcular segurança
-                int bombRange = j->bombRange; 
-                int safeDist = bombRange + 2; 
+                int targetDist = j->bombRange + 3; 
+                int currentDist = abs((int)myGridPos.x - (int)bombGridPos.x) + abs((int)myGridPos.y - (int)bombGridPos.y);
 
-                bool canSeeBomb = ((int)myGridPos.x == (int)bombGridPos.x) || 
-                                  ((int)myGridPos.y == (int)bombGridPos.y);
-
-                if (dist >= safeDist && !canSeeBomb)
-                {
-                    j->botState = BOT_STATE_HOLDING; 
+                if (currentDist >= targetDist) {
+                    j->botState = BOT_STATE_HOLDING;
                     j->botStateTimer = BOMBA_COOLDOWN_TEMPO - 0.5f; 
-                    j->botMoveDirecao = 4; // PARAR
+                    j->botMoveDirecao = 4; 
+                }
+                // Anti-stuck PÂNICO
+                else if (!acabouDePlantar && Vector2Distance(posAntes, j->pos) < 0.05f) 
+                {
+                    // Se travou no meio da fuga, usa IsDirectionWalkable (IGNORA BOMBAS)
+                    // para encontrar QUALQUER saída, mesmo que passe por cima de bombas.
+                    
+                    int gx = (int)myGridPos.x;
+                    int gy = (int)myGridPos.y;
+                    int novaDir = -1;
+                    
+                    // Tenta direção perpendicular primeiro
+                    if (j->botMoveDirecao <= 1) { // Vertical
+                        if (IsDirectionWalkable(gx, gy, 2)) novaDir = 2;
+                        else if (IsDirectionWalkable(gx, gy, 3)) novaDir = 3;
+                    } else { // Horizontal
+                        if (IsDirectionWalkable(gx, gy, 0)) novaDir = 0;
+                        else if (IsDirectionWalkable(gx, gy, 1)) novaDir = 1;
+                    }
+                    
+                    // Se não achou perpendicular, tenta qualquer uma que não seja voltar
+                    if (novaDir == -1) {
+                        if (IsDirectionWalkable(gx, gy, 0) && j->botMoveDirecao != 1) novaDir = 0;
+                        else if (IsDirectionWalkable(gx, gy, 1) && j->botMoveDirecao != 0) novaDir = 1;
+                        else if (IsDirectionWalkable(gx, gy, 2) && j->botMoveDirecao != 3) novaDir = 2;
+                        else if (IsDirectionWalkable(gx, gy, 3) && j->botMoveDirecao != 2) novaDir = 3;
+                    }
+
+                    if (novaDir != -1) {
+                        j->botMoveDirecao = novaDir;
+                        SnapToGrid(j, novaDir);
+                    }
                 }
                 break;
             }
@@ -248,41 +362,33 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
                 if (j->botStateTimer <= 0.0f)
                 {
                     j->botState = BOT_STATE_WANDERING; 
-                    j->botStateTimer = 1.0f; 
+                    j->botStateTimer = 0.5f; 
                     j->botMoveDirecao = GetRandomValue(0, 4); 
                 }
                 break;
             }
         }
 
-        // Movimento Bot (Usa currentSpeed)
+        // --- CONFIGURAÇÃO DE MOVIMENTO ---
+        // No estado FLEEING, SEMPRE ignora bombas para garantir que não trava na própria bomba
+        bool ignoreBombs = (j->botState == BOT_STATE_FLEEING);
+
         j->currentDir = DIR_PARADO; 
         switch (j->botMoveDirecao)
         {
-            case 0: MoverJogadorY(j, -currentSpeed, gBombas); j->currentDir = DIR_CIMA; break; 
-            case 1: MoverJogadorY(j, currentSpeed, gBombas);  j->currentDir = DIR_BAIXO; break; 
-            case 2: MoverJogadorX(j, -currentSpeed, gBombas); j->currentDir = DIR_ESQUERDA; break; 
-            case 3: MoverJogadorX(j, currentSpeed, gBombas);  j->currentDir = DIR_DIREITA; break; 
+            case 0: MoverJogadorY(j, -currentSpeed, gBombas, ignoreBombs); j->currentDir = DIR_CIMA; break; 
+            case 1: MoverJogadorY(j, currentSpeed, gBombas, ignoreBombs);  j->currentDir = DIR_BAIXO; break; 
+            case 2: MoverJogadorX(j, -currentSpeed, gBombas, ignoreBombs); j->currentDir = DIR_ESQUERDA; break; 
+            case 3: MoverJogadorX(j, currentSpeed, gBombas, ignoreBombs);  j->currentDir = DIR_DIREITA; break; 
             case 4: j->currentFrame = 0; break; 
         }
-
-        if (posAntes.x == j->pos.x && posAntes.y == j->pos.y && j->botMoveDirecao != 4)
-        {
-            if (j->botState == BOT_STATE_FLEEING) {
-                j->botMoveDirecao = GetRandomValue(0, 3);
-            }
-            else if (j->botState == BOT_STATE_WANDERING) {
-                j->botStateTimer = 0.0f; 
-            }
-        }
     }
-    // --- LÓGICA HUMANA (Movimento Diagonal) ---
+    // --- LÓGICA HUMANA ---
     else
     {
         float dx = 0.0f, dy = 0.0f;
         bool moveu = false;
 
-        // Usa currentSpeed aqui também
         if (IsKeyDown(keyUp)) { dy -= currentSpeed; j->currentDir = DIR_CIMA; moveu = true; }
         if (IsKeyDown(keyDown)) { dy += currentSpeed; j->currentDir = DIR_BAIXO; moveu = true; }
         if (IsKeyDown(keyLeft)) { dx -= currentSpeed; j->currentDir = DIR_ESQUERDA; moveu = true; }
@@ -293,8 +399,8 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
             j->currentFrame = 0;
         }
 
-        MoverJogadorX(j, dx, gBombas);
-        MoverJogadorY(j, dy, gBombas);
+        MoverJogadorX(j, dx, gBombas, false);
+        MoverJogadorY(j, dy, gBombas, false);
         
         if (IsKeyPressed(keyBomb) && j->bombaCooldown <= 0.0f)
         {
@@ -314,7 +420,6 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
     }
 }
 
-// --- DesenharJogador (Atualizado) ---
 void DesenharJogador(const Jogador* j)
 {
     if (!j->vivo) return; 
@@ -336,15 +441,13 @@ void DesenharJogador(const Jogador* j)
     
     Rectangle sourceRec = { 0.0f, 0.0f, (float)texToDraw.width, (float)texToDraw.height };
     
-    // --- Efeito visual dos Power-ups ---
     Color tint = WHITE;
-    if (j->temDefesa) tint = SKYBLUE;        // Azul Claro = Escudo
-    else if (j->temVelocidade) tint = LIME;  // Verde = Velocidade
+    if (j->temDefesa) tint = SKYBLUE;        
+    else if (j->temVelocidade) tint = LIME;  
 
     DrawTexturePro(texToDraw, sourceRec, destRec, origin, 0.0f, tint);
 }
 
-// --- DestruirJogador (Sem alteração) ---
 void DestruirJogador(Jogador* j)
 {
     UnloadTexture(j->texParado);
