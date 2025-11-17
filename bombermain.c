@@ -7,7 +7,8 @@
 #include "bomba.h"      
 #include "explosao.h"   
 #include "derrota.h"    
-#include "vitoria.h"    
+#include "vitoria.h"
+#include "extras.h"     // <-- NOVO: Inclui extras.h
 #include <stdbool.h>
 #include <stddef.h>   
 
@@ -25,6 +26,11 @@ int main(void)
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "BomberMain");
     ToggleFullscreen();
     SetTargetFPS(60);
+    
+    // --- NOVO: Inicializa o sistema de extras ---
+    InicializarExtras(); 
+    // --------------------------------------------
+
     bool deveContinuar = ExecutarTelaInicio();
     
     while (deveContinuar && !WindowShouldClose())
@@ -52,6 +58,11 @@ int main(void)
                 break;
         }
     }
+    
+    // --- NOVO: Limpa o sistema de extras ---
+    DescarregarExtras();
+    // ---------------------------------------
+    
     CloseWindow(); 
     return 0;
 }
@@ -59,17 +70,23 @@ int main(void)
 
 void ExecutarJogoBattle(BattleSettings settings) {
     
-    // --- ATUALIZADO: Lógica de Seleção de Mapa (Inclui PirateBoat) ---
+    // Seleção de Mapa
     if (settings.mapIndex == 1) {
         InicializarMapa("Cave");
     } 
     else if (settings.mapIndex == 2) {
-        InicializarMapa("PirateBoat"); // Carrega da nova pasta
+        InicializarMapa("PirateBoat"); 
     } 
     else {
         InicializarMapa("Default");
     }
-    // --- FIM DA ATUALIZAÇÃO ---
+    
+    // --- NOVO: Resetar extras ao iniciar uma partida ---
+    // (Recomendado, embora InicializarExtras já limpe, garante que 
+    // se começar nova partida, não tenha extras antigos no mapa)
+    // Você pode criar uma função `ResetarExtras()` em extras.c se quiser,
+    // ou apenas chamar InicializarExtras() de novo (se ela recarregar texturas, cuidado).
+    // Por enquanto, vamos assumir que o mapa começa limpo.
     
     bool j1_ehHumano = true;
     bool j4_ehHumano = (settings.numPlayers == 2); 
@@ -92,6 +109,7 @@ void ExecutarJogoBattle(BattleSettings settings) {
         
         float deltaTime = GetFrameTime(); 
 
+        // Atualização dos Jogadores
         AtualizarJogador(&j1, KEY_W, KEY_S, KEY_A, KEY_D, KEY_SPACE, &gBombas, deltaTime, p1_target, p2_target); 
         AtualizarJogador(&j2, 0, 0, 0, 0, 0, &gBombas, deltaTime, p1_target, p2_target);
         AtualizarJogador(&j3, 0, 0, 0, 0, 0, &gBombas, deltaTime, p1_target, p2_target); 
@@ -101,6 +119,13 @@ void ExecutarJogoBattle(BattleSettings settings) {
         } else {
             AtualizarJogador(&j4, 0, 0, 0, 0, 0, &gBombas, deltaTime, p1_target, p2_target);
         }
+        
+        // --- NOVO: Verificar Coleta de Extras ---
+        VerificarColetaExtras(&j1);
+        VerificarColetaExtras(&j2);
+        VerificarColetaExtras(&j3);
+        VerificarColetaExtras(&j4);
+        // ----------------------------------------
 
         AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadores);
         AtualizarExplosoes(&gExplosoes, deltaTime);
@@ -119,6 +144,11 @@ void ExecutarJogoBattle(BattleSettings settings) {
         BeginDrawing(); 
             ClearBackground(BLACK);
             DesenharMapa();
+            
+            // --- NOVO: Desenhar Extras ---
+            DesenharExtras(); 
+            // -----------------------------
+            
             DesenharJogador(&j1); DesenharJogador(&j2);
             DesenharJogador(&j3); DesenharJogador(&j4);
             DesenharBombas(&gBombas);
@@ -131,6 +161,9 @@ void ExecutarJogoBattle(BattleSettings settings) {
     DestruirJogador(&j3); DestruirJogador(&j4);
     UnloadBombas(&gBombas);
     UnloadExplosoes(&gExplosoes);
+    
+    // Nota: Não descarregamos extras aqui, pois eles são carregados globalmente no main().
+    // Se quiser limpar o array de extras ao sair da batalha, seria bom ter uma função `ResetarExtras()`.
 }
 
 
@@ -153,6 +186,10 @@ void ExecutarJogoStory(void)
         float deltaTime = GetFrameTime(); 
         
         AtualizarJogador(&j1, KEY_W, KEY_S, KEY_A, KEY_D, KEY_SPACE, &gBombas, deltaTime, p1_target, p2_target);
+        
+        // --- NOVO: Verificar Coleta ---
+        VerificarColetaExtras(&j1);
+        // ------------------------------
 
         AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadores);
         AtualizarExplosoes(&gExplosoes, deltaTime);
@@ -163,6 +200,11 @@ void ExecutarJogoStory(void)
         BeginDrawing(); 
             ClearBackground(BLACK);
             DesenharMapa();
+            
+            // --- NOVO: Desenhar Extras ---
+            DesenharExtras(); 
+            // -----------------------------
+            
             DesenharJogador(&j1);
             DesenharBombas(&gBombas);
             DesenharExplosoes(&gExplosoes);

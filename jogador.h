@@ -5,17 +5,24 @@
 #include <stdbool.h>
 #include "bomba.h" 
 
-// --- Constantes (Sem alteração) ---
-typedef enum { BOT_STATE_WANDERING, BOT_STATE_FLEEING, BOT_STATE_HOLDING } BotState;
+// --- Estados da IA ---
+typedef enum {
+    BOT_STATE_WANDERING, 
+    BOT_STATE_FLEEING,   
+    BOT_STATE_HOLDING    
+} BotState;
+
+// --- Constantes ---
 #define NUM_FRAMES_ANDAR 3 
 #define ANIM_FRAME_SPEED 0.15f 
 typedef enum { DIR_CIMA=0, DIR_BAIXO, DIR_ESQUERDA, DIR_DIREITA, DIR_PARADO } AnimDirection;
 
-// --- Struct Jogador (Sem alteração) ---
 typedef struct Jogador
 {
     Vector2 pos;       
     float velocidade;  
+    
+    // Texturas
     Texture2D texParado; 
     Texture2D texCima[NUM_FRAMES_ANDAR];
     Texture2D texBaixo[NUM_FRAMES_ANDAR];
@@ -24,24 +31,37 @@ typedef struct Jogador
     int currentFrame;           
     float frameTimer;           
     AnimDirection currentDir;   
+
     bool vivo;         
+    
+    // Variáveis do Bot
     bool ehBot;
     BotState botState;      
     float botStateTimer;    
     int botMoveDirecao;     
     Vector2 botLastBombPos; 
+    
     float bombaCooldown; 
+    
+    // --- NOVO: Atributos de Power-ups (Extras) ---
+    int bombRange;          // Alcance da bomba (Começa em 1)
+    
+    bool temDefesa;         // Se tem escudo
+    float timerDefesa;      // Tempo restante do escudo
+    
+    bool temVelocidade;     // Se tem speed boost
+    float timerVelocidade;  // Tempo restante da velocidade
+    // ---------------------------------------------
+    
 } Jogador;
 
-// Assinatura CriarJogador (Sem alteração)
+// Assinaturas
 Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot);
 
-// --- ATUALIZADO: Assinatura da Função ---
-// Adiciona os dois alvos humanos (targetHuman2 pode ser NULL)
+// Atualizar recebe os alvos para a IA
 void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRight, int keyBomb, 
                       NodeBombas *gBombas, float deltaTime, 
                       Jogador* targetHuman1, Jogador* targetHuman2);
-// --- FIM DA ATUALIZAÇÃO ---
 
 void DesenharJogador(const Jogador* j);
 void DestruirJogador(Jogador* j);

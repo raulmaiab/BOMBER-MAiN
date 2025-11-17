@@ -4,46 +4,37 @@
 #include "raylib.h"
 #include <stdbool.h>
 
-// Quantas explosões podem estar na tela ao mesmo tempo
-#define MAX_EXPLOSOES 50
+#define MAX_EXPLOSOES 100 // Aumentei para garantir que cabem todas as chamas
+
+// Forward declaration para evitar erros de inclusão cruzada
+struct Jogador; 
 
 typedef struct {
-    Vector2 pos;        // Posição (em pixels)
-    bool ativa;         // Está ativa?
-    float frameTimer;   // Temporizador da animação
-    int currentFrame;   // Frame atual (0 = explo1.png, 1 = explo2.png)
+    Vector2 pos;
+    bool ativa;
+    int currentFrame;
+    float frameTimer;
 } Explosao;
 
 typedef struct {
     Explosao explosoes[MAX_EXPLOSOES];
     int quantidade;
-    Texture2D texExplo1; // Textura para explo1.png
-    Texture2D texExplo2; // Textura para explo2.png
+    Texture2D texExplo1;
+    Texture2D texExplo2;
 } NodeExplosoes;
 
-/**
- * @brief Carrega as texturas da explosão (explo1.png, explo2.png)
- */
 NodeExplosoes CriarNodeExplosoes(void);
 
-/**
- * @brief Ativa uma nova animação de explosão na posição dada.
- */
+// Apenas liga o visual (uso interno)
 void AtivarExplosao(NodeExplosoes *g, Vector2 pos);
 
-/**
- * @brief Atualiza o timer de todas as explosões ativas.
- */
+// --- NOVA FUNÇÃO PRINCIPAL ---
+// Gerencia a lógica: quebra blocos, spawna extras e mata jogadores
+void CriarExplosao(NodeExplosoes *g, Vector2 centro, int range, struct Jogador* jogadores[], int numJogadores);
+// -----------------------------
+
 void AtualizarExplosoes(NodeExplosoes *g, float deltaTime);
-
-/**
- * @brief Desenha todas as explosões ativas.
- */
 void DesenharExplosoes(const NodeExplosoes *g);
-
-/**
- * @brief Descarrega as texturas da explosão.
- */
 void UnloadExplosoes(NodeExplosoes *g);
 
 #endif // EXPLOSAO_H

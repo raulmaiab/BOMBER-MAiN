@@ -10,15 +10,20 @@
 #define COLLISION_MARGIN 4.0f 
 #define BOMBA_COOLDOWN_TEMPO 2.5f 
 
-// --- Funções Ajudantes (Sem alteração) ---
+// --- Funções Ajudantes ---
+
+// ATUALIZADO: Passa o j->bombRange para a bomba
 static void AlinharEPlantarBomba(Jogador* j, NodeBombas *gBombas) {
     float centerX = j->pos.x + (TILE_SIZE / 2.0f);
     float centerY = j->pos.y + (TILE_SIZE / 2.0f);
     int gridX = (int)(centerX / TILE_SIZE);
     int gridY = (int)(centerY / TILE_SIZE);
     Vector2 posBombaAlinhada = { (float)gridX * TILE_SIZE, (float)gridY * TILE_SIZE };
-    PlantarBomba(gBombas, posBombaAlinhada);
+    
+    // Usa o range atual do jogador (que pode ter sido aumentado por extras)
+    PlantarBomba(gBombas, posBombaAlinhada, j->bombRange); 
 }
+
 static bool IsBombAt(NodeBombas *gBombas, int gridX, int gridY) {
     for (int i = 0; i < gBombas->quantidade; i++) {
         if (!gBombas->bombas[i].ativa) continue;
@@ -27,6 +32,7 @@ static bool IsBombAt(NodeBombas *gBombas, int gridX, int gridY) {
     }
     return false; 
 }
+
 static void MoverJogadorX(Jogador *j, float delta, NodeBombas *gBombas) {
     if (delta == 0) return;
     Vector2 playerCenter = { j->pos.x + TILE_SIZE/2.0f, j->pos.y + TILE_SIZE/2.0f };
@@ -46,6 +52,7 @@ static void MoverJogadorX(Jogador *j, float delta, NodeBombas *gBombas) {
     bool t2 = (GetTileTipo((int)gPos2.x, (int)gPos2.y) == TILE_EMPTY) && (!b2 || p2);
     if (t1 && t2) { j->pos.x = posTentativa.x; }
 }
+
 static void MoverJogadorY(Jogador *j, float delta, NodeBombas *gBombas) {
     if (delta == 0) return;
     Vector2 playerCenter = { j->pos.x + TILE_SIZE/2.0f, j->pos.y + TILE_SIZE/2.0f };
@@ -65,10 +72,9 @@ static void MoverJogadorY(Jogador *j, float delta, NodeBombas *gBombas) {
     bool t2 = (GetTileTipo((int)gPos2.x, (int)gPos2.y) == TILE_EMPTY) && (!b2 || p2);
     if (t1 && t2) { j->pos.y = posTentativa.y; }
 }
-// --- Fim Funções Ajudantes ---
 
 
-// --- CriarJogador (Sem alteração) ---
+// --- CriarJogador ---
 Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
 {
     Jogador j;
@@ -86,6 +92,7 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
     sprintf(pathBuffer, "%s/direita2.png", pastaSprites); j.texDireita[1] = LoadTexture(pathBuffer);
     sprintf(pathBuffer, "%s/direita3.png", pastaSprites); j.texDireita[2] = LoadTexture(pathBuffer);
     j.currentFrame = 0; j.frameTimer = 0.0f; j.currentDir = DIR_BAIXO; 
+    
     j.ehBot = ehBot;
     if (j.ehBot) {
         j.botState = BOT_STATE_WANDERING; 
@@ -98,15 +105,43 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
     }
     j.botLastBombPos = (Vector2){0,0};
     j.bombaCooldown = 0.0f; 
+
+    // --- ATUALIZADO: Inicializa Status dos Power-ups ---
+    j.bombRange = 1;        // Padrão
+    j.temDefesa = false; 
+    j.timerDefesa = 0.0f;
+    j.temVelocidade = false; 
+    j.timerVelocidade = 0.0f;
+    // --------------------------------------------------
+
     return j;
 }
 
-// --- ATUALIZADO: AtualizarJogador (Diagonal ativada) ---
+// --- AtualizarJogador ---
 void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRight, int keyBomb, 
                       NodeBombas *gBombas, float deltaTime, 
                       Jogador* targetHuman1, Jogador* targetHuman2)
 {
     if (!j->vivo) return;
+
+    // --- NOVO: Lógica de Timer dos Power-ups ---
+    float speedMultiplier = 1.0f;
+    
+    if (j->temVelocidade) {
+        j->timerVelocidade -= deltaTime;
+        speedMultiplier = 1.5f; // 50% mais rápido
+        if (j->timerVelocidade <= 0.0f) j->temVelocidade = false;
+    }
+    
+    if (j->temDefesa) {
+        j->timerDefesa -= deltaTime;
+        if (j->timerDefesa <= 0.0f) j->temDefesa = false;
+    }
+
+    // Velocidade real usada neste frame
+    float currentSpeed = j->velocidade * speedMultiplier; 
+    // -------------------------------------------
+
     if (j->bombaCooldown > 0.0f) { j->bombaCooldown -= deltaTime; }
     j->botStateTimer -= deltaTime; 
 
@@ -122,6 +157,7 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
         
         switch (j->botState)
         {
+            // WANDERING (IA v14)
             case BOT_STATE_WANDERING:
             {
                 if (j->bombaCooldown <= 0.0f) 
@@ -137,10 +173,10 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
                     else if (GetTileTipo(gridX + 1, gridY) == TILE_EMPTY) safeDir = 3; 
 
                     bool isAtExtremity = false;
-                    if ((gridX == 1 && gridY == 1) || (gridX == 1 && gridY == 2) || (gridX == 2 && gridY == 1)) { isAtExtremity = true; }
-                    else if ((gridX == MAP_GRID_WIDTH - 2 && gridY == 1) || (gridX == MAP_GRID_WIDTH - 3 && gridY == 1) || (gridX == MAP_GRID_WIDTH - 2 && gridY == 2)) { isAtExtremity = true; }
-                    else if ((gridX == 1 && gridY == MAP_GRID_HEIGHT - 2) || (gridX == 1 && gridY == MAP_GRID_HEIGHT - 3) || (gridX == 2 && gridY == MAP_GRID_HEIGHT - 2)) { isAtExtremity = true; }
-                    else if ((gridX == MAP_GRID_WIDTH - 2 && gridY == MAP_GRID_HEIGHT - 2) || (gridX == MAP_GRID_WIDTH - 3 && gridY == MAP_GRID_HEIGHT - 2) || (gridX == MAP_GRID_WIDTH - 2 && gridY == MAP_GRID_HEIGHT - 3)) { isAtExtremity = true; }
+                    if ((gridX == 1 && gridY == 1) || (gridX == 1 && gridY == 2) || (gridX == 2 && gridY == 1)) isAtExtremity = true;
+                    else if ((gridX == MAP_GRID_WIDTH - 2 && gridY == 1) || (gridX == MAP_GRID_WIDTH - 3 && gridY == 1) || (gridX == MAP_GRID_WIDTH - 2 && gridY == 2)) isAtExtremity = true;
+                    else if ((gridX == 1 && gridY == MAP_GRID_HEIGHT - 2) || (gridX == 1 && gridY == MAP_GRID_HEIGHT - 3) || (gridX == 2 && gridY == MAP_GRID_HEIGHT - 2)) isAtExtremity = true;
+                    else if ((gridX == MAP_GRID_WIDTH - 2 && gridY == MAP_GRID_HEIGHT - 2) || (gridX == MAP_GRID_WIDTH - 3 && gridY == MAP_GRID_HEIGHT - 2) || (gridX == MAP_GRID_WIDTH - 2 && gridY == MAP_GRID_HEIGHT - 3)) isAtExtremity = true;
                     
                     bool isNearDestructible = false;
                     if (GetTileTipo(gridX, gridY - 1) == TILE_DESTRUCTIBLE) isNearDestructible = true;
@@ -182,13 +218,16 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
                 break; 
             }
             
+            // FLEEING (IA v16 - Inteligente e segura)
             case BOT_STATE_FLEEING:
             {
                 Vector2 myGridPos = GetGridPosFromPixels(j->pos);
                 Vector2 bombGridPos = GetGridPosFromPixels(j->botLastBombPos);
 
                 int dist = abs((int)myGridPos.x - (int)bombGridPos.x) + abs((int)myGridPos.y - (int)bombGridPos.y);
-                int bombRange = 1; 
+                
+                // ATUALIZADO: Usa o range do bot para calcular segurança
+                int bombRange = j->bombRange; 
                 int safeDist = bombRange + 2; 
 
                 bool canSeeBomb = ((int)myGridPos.x == (int)bombGridPos.x) || 
@@ -216,13 +255,14 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
             }
         }
 
+        // Movimento Bot (Usa currentSpeed)
         j->currentDir = DIR_PARADO; 
         switch (j->botMoveDirecao)
         {
-            case 0: MoverJogadorY(j, -j->velocidade, gBombas); j->currentDir = DIR_CIMA; break; 
-            case 1: MoverJogadorY(j, j->velocidade, gBombas);  j->currentDir = DIR_BAIXO; break; 
-            case 2: MoverJogadorX(j, -j->velocidade, gBombas); j->currentDir = DIR_ESQUERDA; break; 
-            case 3: MoverJogadorX(j, j->velocidade, gBombas);  j->currentDir = DIR_DIREITA; break; 
+            case 0: MoverJogadorY(j, -currentSpeed, gBombas); j->currentDir = DIR_CIMA; break; 
+            case 1: MoverJogadorY(j, currentSpeed, gBombas);  j->currentDir = DIR_BAIXO; break; 
+            case 2: MoverJogadorX(j, -currentSpeed, gBombas); j->currentDir = DIR_ESQUERDA; break; 
+            case 3: MoverJogadorX(j, currentSpeed, gBombas);  j->currentDir = DIR_DIREITA; break; 
             case 4: j->currentFrame = 0; break; 
         }
 
@@ -236,45 +276,22 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
             }
         }
     }
-    // --- LÓGICA HUMANA (ATUALIZADA) ---
+    // --- LÓGICA HUMANA (Movimento Diagonal) ---
     else
     {
         float dx = 0.0f, dy = 0.0f;
-        
-        // --- ALTERAÇÃO AQUI: Permite múltiplas teclas ---
-        // (Removemos os 'else' para processar X e Y independentemente)
-        
         bool moveu = false;
 
-        // Eixo Y
-        if (IsKeyDown(keyUp)) { 
-            dy -= j->velocidade; 
-            j->currentDir = DIR_CIMA; 
-            moveu = true;
-        }
-        if (IsKeyDown(keyDown)) { 
-            dy += j->velocidade; 
-            j->currentDir = DIR_BAIXO; 
-            moveu = true;
-        }
-
-        // Eixo X
-        if (IsKeyDown(keyLeft)) { 
-            dx -= j->velocidade; 
-            j->currentDir = DIR_ESQUERDA; 
-            moveu = true;
-        }
-        if (IsKeyDown(keyRight)) { 
-            dx += j->velocidade; 
-            j->currentDir = DIR_DIREITA; 
-            moveu = true;
-        }
+        // Usa currentSpeed aqui também
+        if (IsKeyDown(keyUp)) { dy -= currentSpeed; j->currentDir = DIR_CIMA; moveu = true; }
+        if (IsKeyDown(keyDown)) { dy += currentSpeed; j->currentDir = DIR_BAIXO; moveu = true; }
+        if (IsKeyDown(keyLeft)) { dx -= currentSpeed; j->currentDir = DIR_ESQUERDA; moveu = true; }
+        if (IsKeyDown(keyRight)) { dx += currentSpeed; j->currentDir = DIR_DIREITA; moveu = true; }
 
         if (!moveu) {
             j->currentDir = DIR_PARADO;
             j->currentFrame = 0;
         }
-        // --- FIM DA ALTERAÇÃO ---
 
         MoverJogadorX(j, dx, gBombas);
         MoverJogadorY(j, dy, gBombas);
@@ -297,13 +314,15 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
     }
 }
 
-// --- DesenharJogador (Sem alteração) ---
+// --- DesenharJogador (Atualizado) ---
 void DesenharJogador(const Jogador* j)
 {
     if (!j->vivo) return; 
+    
     Rectangle destRec = { j->pos.x, j->pos.y, TILE_SIZE, TILE_SIZE };
     Vector2 origin = { 0, 0 };
     Texture2D texToDraw;
+
     switch (j->currentDir) {
         case DIR_CIMA:    texToDraw = j->texCima[j->currentFrame]; break;
         case DIR_BAIXO:   texToDraw = j->texBaixo[j->currentFrame]; break;
@@ -312,9 +331,17 @@ void DesenharJogador(const Jogador* j)
         case DIR_PARADO:  texToDraw = j->texParado; break; 
         default:          texToDraw = j->texParado; break;
     }
-    if (texToDraw.id == 0) { texToDraw = j->texParado; }
+    
+    if (texToDraw.id == 0) texToDraw = j->texParado;
+    
     Rectangle sourceRec = { 0.0f, 0.0f, (float)texToDraw.width, (float)texToDraw.height };
-    DrawTexturePro(texToDraw, sourceRec, destRec, origin, 0.0f, WHITE);
+    
+    // --- Efeito visual dos Power-ups ---
+    Color tint = WHITE;
+    if (j->temDefesa) tint = SKYBLUE;        // Azul Claro = Escudo
+    else if (j->temVelocidade) tint = LIME;  // Verde = Velocidade
+
+    DrawTexturePro(texToDraw, sourceRec, destRec, origin, 0.0f, tint);
 }
 
 // --- DestruirJogador (Sem alteração) ---

@@ -7,17 +7,14 @@
 
 #define MAX_BOMBAS_ATIVAS 20
 
-// --- NOVO: Forward Declaration ---
-// Dizemos ao compilador "existe uma struct Jogador",
-// para evitar erros de inclusão circular com jogador.h
+// Forward Declaration para evitar inclusão circular
 struct Jogador;
-// --- FIM NOVO ---
 
 typedef struct Bomba 
 {
     Vector2 posicao;          
     float tempoExplosao;      
-    int raioExplosao;         
+    int raioExplosao; // Este valor agora será dinâmico        
     bool ativa;               
     
     int currentFrame;         
@@ -34,12 +31,11 @@ typedef struct {
 
 NodeBombas CriarNodeBombas(void); 
 
-void PlantarBomba(NodeBombas *g, Vector2 posBomba);
-
-// --- ATUALIZADO: Assinatura da função ---
-// Agora aceita um array de ponteiros de Jogador e a quantidade.
-bool AtualizarBombas(NodeBombas *g, float deltaTime, NodeExplosoes *gExplosoes, struct Jogador* jogadores[], int numJogadores);
+// --- ATUALIZADO: Agora aceita o 'range' do jogador ---
+void PlantarBomba(NodeBombas *g, Vector2 posBomba, int range);
 // --- FIM DA ATUALIZAÇÃO ---
+
+bool AtualizarBombas(NodeBombas *g, float deltaTime, NodeExplosoes *gExplosoes, struct Jogador* jogadores[], int numJogadores);
 
 void DesenharBombas(const NodeBombas *g);
 
