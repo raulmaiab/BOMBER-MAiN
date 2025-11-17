@@ -8,31 +8,29 @@ static Texture2D texIndestrutivel;
 static Texture2D texDestrutivel;
 static TileType mapa[MAP_GRID_HEIGHT][MAP_GRID_WIDTH];
 
-// --- ATUALIZADO: Recebe o nome da pasta ---
+// Recebe o nome da pasta (ex: "Default" ou "Cave")
 void InicializarMapa(const char* pastaTema)
 {
     srand(time(NULL)); 
 
-    char pathBuffer[256]; // Buffer para montar o caminho do arquivo
+    char pathBuffer[256]; 
 
-    // Constrói o caminho: "Default/ground.png"
+    // Constrói os caminhos baseados na pasta recebida
     sprintf(pathBuffer, "%s/ground.png", pastaTema);
     texChao = LoadTexture(pathBuffer);
 
-    // Constrói o caminho: "Default/wall.png"
     sprintf(pathBuffer, "%s/wall.png", pastaTema);
     texIndestrutivel = LoadTexture(pathBuffer);
 
-    // Constrói o caminho: "Default/wallb.png"
     sprintf(pathBuffer, "%s/wallb.png", pastaTema);
     texDestrutivel = LoadTexture(pathBuffer); 
 
-    // Verificações de segurança
+    // Logs de erro
     if (texChao.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar %s/ground.png", pastaTema);
     if (texIndestrutivel.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar %s/wall.png", pastaTema);
     if (texDestrutivel.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar %s/wallb.png", pastaTema);
 
-    // --- Geração do Mapa (Sem alterações na lógica) ---
+    // Geração do layout (Sem alterações)
     for (int y = 0; y < MAP_GRID_HEIGHT; y++) {
         for (int x = 0; x < MAP_GRID_WIDTH; x++) {
             if (y == 0 || y == MAP_GRID_HEIGHT - 1 || x == 0 || x == MAP_GRID_WIDTH - 1) {
@@ -55,27 +53,15 @@ void InicializarMapa(const char* pastaTema)
     }
 
     // Limpa posições iniciais
-    mapa[1][1] = TILE_EMPTY;
-    mapa[1][2] = TILE_EMPTY;
-    mapa[2][1] = TILE_EMPTY;
-    
-    mapa[1][MAP_GRID_WIDTH - 2] = TILE_EMPTY;
-    mapa[1][MAP_GRID_WIDTH - 3] = TILE_EMPTY;
-    mapa[2][MAP_GRID_WIDTH - 2] = TILE_EMPTY;
-    
-    mapa[MAP_GRID_HEIGHT - 2][1] = TILE_EMPTY;
-    mapa[MAP_GRID_HEIGHT - 2][2] = TILE_EMPTY;
-    mapa[MAP_GRID_HEIGHT - 3][1] = TILE_EMPTY;
-    
-    mapa[MAP_GRID_HEIGHT - 2][MAP_GRID_WIDTH - 2] = TILE_EMPTY;
-    mapa[MAP_GRID_HEIGHT - 2][MAP_GRID_WIDTH - 3] = TILE_EMPTY;
-    mapa[MAP_GRID_HEIGHT - 3][MAP_GRID_WIDTH - 2] = TILE_EMPTY;
+    mapa[1][1] = TILE_EMPTY; mapa[1][2] = TILE_EMPTY; mapa[2][1] = TILE_EMPTY;
+    mapa[1][MAP_GRID_WIDTH - 2] = TILE_EMPTY; mapa[1][MAP_GRID_WIDTH - 3] = TILE_EMPTY; mapa[2][MAP_GRID_WIDTH - 2] = TILE_EMPTY;
+    mapa[MAP_GRID_HEIGHT - 2][1] = TILE_EMPTY; mapa[MAP_GRID_HEIGHT - 2][2] = TILE_EMPTY; mapa[MAP_GRID_HEIGHT - 3][1] = TILE_EMPTY;
+    mapa[MAP_GRID_HEIGHT - 2][MAP_GRID_WIDTH - 2] = TILE_EMPTY; mapa[MAP_GRID_HEIGHT - 2][MAP_GRID_WIDTH - 3] = TILE_EMPTY; mapa[MAP_GRID_HEIGHT - 3][MAP_GRID_WIDTH - 2] = TILE_EMPTY;
 }
 
 void DesenharMapa(void)
 {
     Vector2 origin = { 0, 0 };
-    // Usa as texturas carregadas (srcRect baseado no tamanho da textura)
     Rectangle srcChao = { 0, 0, (float)texChao.width, (float)texChao.height };
     Rectangle srcInd = { 0, 0, (float)texIndestrutivel.width, (float)texIndestrutivel.height };
     Rectangle srcDest = { 0, 0, (float)texDestrutivel.width, (float)texDestrutivel.height };
@@ -83,8 +69,6 @@ void DesenharMapa(void)
     for (int y = 0; y < MAP_GRID_HEIGHT; y++) {
         for (int x = 0; x < MAP_GRID_WIDTH; x++) {
             Rectangle destRec = { (float)x * TILE_SIZE, (float)y * TILE_SIZE, (float)TILE_SIZE, (float)TILE_SIZE };
-            
-            // Desenha o chão em tudo
             DrawTexturePro(texChao, srcChao, destRec, origin, 0.0f, WHITE);
 
             switch (mapa[y][x]) {
@@ -92,14 +76,10 @@ void DesenharMapa(void)
                     DrawTexturePro(texIndestrutivel, srcInd, destRec, origin, 0.0f, WHITE);
                     break;
                 case TILE_DESTRUCTIBLE:
-                    if (texDestrutivel.id > 0) {
-                        DrawTexturePro(texDestrutivel, srcDest, destRec, origin, 0.0f, WHITE);
-                    } else {
-                        DrawRectangleRec(destRec, PURPLE); // Fallback visual
-                    }
+                    if (texDestrutivel.id > 0) DrawTexturePro(texDestrutivel, srcDest, destRec, origin, 0.0f, WHITE);
+                    else DrawRectangleRec(destRec, PURPLE);
                     break;
-                case TILE_EMPTY:
-                    break;
+                case TILE_EMPTY: break;
             }
         }
     }
@@ -112,23 +92,16 @@ void DescarregarMapa(void)
     UnloadTexture(texDestrutivel);
 }
 
-TileType GetTileTipo(int x, int y)
-{
-    if (x < 0 || x >= MAP_GRID_WIDTH || y < 0 || y >= MAP_GRID_HEIGHT) {
-        return TILE_INDESTRUCTIBLE; 
-    }
+TileType GetTileTipo(int x, int y) {
+    if (x < 0 || x >= MAP_GRID_WIDTH || y < 0 || y >= MAP_GRID_HEIGHT) return TILE_INDESTRUCTIBLE;
     return mapa[y][x];
 }
 
-void SetTileTipo(int x, int y, TileType novoTipo)
-{
-    if (x >= 0 && x < MAP_GRID_WIDTH && y >= 0 && y < MAP_GRID_HEIGHT) {
-        mapa[y][x] = novoTipo;
-    }
+void SetTileTipo(int x, int y, TileType novoTipo) {
+    if (x >= 0 && x < MAP_GRID_WIDTH && y >= 0 && y < MAP_GRID_HEIGHT) mapa[y][x] = novoTipo;
 }
 
-Vector2 GetPlayerStartPosition(int playerIndex)
-{
+Vector2 GetPlayerStartPosition(int playerIndex) {
     switch (playerIndex) {
         case 0: return (Vector2){1 * TILE_SIZE, 1 * TILE_SIZE}; 
         case 1: return (Vector2){(MAP_GRID_WIDTH - 2) * TILE_SIZE, 1 * TILE_SIZE}; 
@@ -138,8 +111,7 @@ Vector2 GetPlayerStartPosition(int playerIndex)
     }
 }
 
-Vector2 GetGridPosFromPixels(Vector2 pixelPos)
-{
+Vector2 GetGridPosFromPixels(Vector2 pixelPos) {
     int gridX = (int)(pixelPos.x / TILE_SIZE);
     int gridY = (int)(pixelPos.y / TILE_SIZE);
     return (Vector2){ (float)gridX, (float)gridY };

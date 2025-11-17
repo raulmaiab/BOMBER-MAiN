@@ -59,11 +59,12 @@ int main(void)
 
 void ExecutarJogoBattle(BattleSettings settings) {
     
-    // --- ATUALIZADO: Passa o nome da pasta ---
-    // Futuramente, você pode usar:
-    // if (settings.mapIndex == 0) InicializarMapa("Default");
-    // else if (settings.mapIndex == 1) InicializarMapa("Gelo");
-    InicializarMapa("Default"); 
+    // --- ATUALIZADO: Lógica de Seleção de Mapa ---
+    if (settings.mapIndex == 1) {
+        InicializarMapa("Cave"); // Carrega da pasta Cave
+    } else {
+        InicializarMapa("Default"); // Carrega da pasta Default (mapIndex 0 ou outros)
+    }
     // --- FIM DA ATUALIZAÇÃO ---
     
     bool j1_ehHumano = true;
@@ -131,9 +132,8 @@ void ExecutarJogoBattle(BattleSettings settings) {
 
 void ExecutarJogoStory(void)
 {
-    // --- ATUALIZADO: Passa o nome da pasta ---
+    // Story Mode usa Default por enquanto
     InicializarMapa("Default"); 
-    // --- FIM DA ATUALIZAÇÃO ---
     
     Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco", false); 
     Jogador* todosJogadores[] = {&j1};

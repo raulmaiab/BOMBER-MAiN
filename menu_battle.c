@@ -108,7 +108,7 @@ bool ExecutarMenuBattle(BattleSettings *settings)
             char mMapText[16];
             switch(mapIndex) {
                 case 0: sprintf(mMapText, "Default"); break;
-                case 1: sprintf(mMapText, "Warehouse"); break;
+                case 1: sprintf(mMapText, "Cave"); break;
                 case 2: sprintf(mMapText, "Ice Rink"); break;
             }
 
