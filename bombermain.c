@@ -9,12 +9,11 @@
 #include "derrota.h"    
 #include "vitoria.h"    
 #include <stdbool.h>
-#include <stddef.h>     // <-- CORREÇÃO: Adicionada esta linha
+#include <stddef.h>   
 
 const int SCREEN_WIDTH = 1440;
 const int SCREEN_HEIGHT = 900;
 
-// Declarações (Sem alteração)
 void ExecutarJogoBattle(BattleSettings settings);
 void ExecutarJogoStory(void);
 void ExecutarShop(void);
@@ -60,7 +59,12 @@ int main(void)
 
 void ExecutarJogoBattle(BattleSettings settings) {
     
-    InicializarMapa(); 
+    // --- ATUALIZADO: Passa o nome da pasta ---
+    // Futuramente, você pode usar:
+    // if (settings.mapIndex == 0) InicializarMapa("Default");
+    // else if (settings.mapIndex == 1) InicializarMapa("Gelo");
+    InicializarMapa("Default"); 
+    // --- FIM DA ATUALIZAÇÃO ---
     
     bool j1_ehHumano = true;
     bool j4_ehHumano = (settings.numPlayers == 2); 
@@ -76,7 +80,7 @@ void ExecutarJogoBattle(BattleSettings settings) {
     NodeExplosoes gExplosoes = CriarNodeExplosoes();
     
     Jogador* p1_target = &j1;
-    Jogador* p2_target = (j4_ehHumano) ? &j4 : NULL; // (Linha 79, agora válida)
+    Jogador* p2_target = (j4_ehHumano) ? &j4 : NULL; 
 
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_ESCAPE)) break;
@@ -96,7 +100,7 @@ void ExecutarJogoBattle(BattleSettings settings) {
         AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadores);
         AtualizarExplosoes(&gExplosoes, deltaTime);
 
-        // Lógica de Vitória/Derrota (Sem alteração)
+        // Lógica de Vitória/Derrota
         if (settings.numPlayers == 1) {
             if (!j1.vivo) { ExecutarTelaDerrota(); break; }
             if (j1.vivo && !j2.vivo && !j3.vivo && !j4.vivo) { ExecutarTelaVitoria(); break; }
@@ -127,7 +131,9 @@ void ExecutarJogoBattle(BattleSettings settings) {
 
 void ExecutarJogoStory(void)
 {
-    InicializarMapa(); 
+    // --- ATUALIZADO: Passa o nome da pasta ---
+    InicializarMapa("Default"); 
+    // --- FIM DA ATUALIZAÇÃO ---
     
     Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco", false); 
     Jogador* todosJogadores[] = {&j1};
@@ -136,7 +142,7 @@ void ExecutarJogoStory(void)
     NodeExplosoes gExplosoes = CriarNodeExplosoes();
     
     Jogador* p1_target = &j1;
-    Jogador* p2_target = NULL; // (Linha 156, agora válida)
+    Jogador* p2_target = NULL; 
     
     while (!WindowShouldClose())
     {
