@@ -34,7 +34,6 @@ OpcaoMenu ExecutarTelaMenu(void)
     MenuItem opcoes[] = {
         {"BATTLE", ESCOLHA_BATTLE},
         {"STORY", ESCOLHA_STORY},
-        {"OTHER", ESCOLHA_OTHER},
         {"SAIR", ESCOLHA_SAIR} 
     };
     int totalOpcoes = sizeof(opcoes) / sizeof(opcoes[0]);
@@ -111,7 +110,6 @@ OpcaoMenu ExecutarTelaMenu(void)
             const char* helpText = "Use UP/DOWN e ENTER"; 
             if (opcoes[indiceOpcaoAtual].idOpcao == ESCOLHA_STORY) { helpText = "Play Story Mode"; }
             else if (opcoes[indiceOpcaoAtual].idOpcao == ESCOLHA_BATTLE) { helpText = "Start a Battle"; }
-            else if (opcoes[indiceOpcaoAtual].idOpcao == ESCOLHA_OTHER) { helpText = "Game Settings"; }
             else if (opcoes[indiceOpcaoAtual].idOpcao == ESCOLHA_SAIR) { helpText = "Exit to Desktop"; }
 
             int helpTextFontSize = 20;
