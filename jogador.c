@@ -7,7 +7,7 @@
 #include <stdio.h> 
 #include <float.h> 
 #include <stdlib.h> 
-#include <string.h> // <<< NOVO: Para usar strncpy
+#include <string.h> 
 
 #define COLLISION_MARGIN 4.0f 
 #define BOMBA_COOLDOWN_TEMPO 2.5f 

@@ -120,7 +120,9 @@ int main(void)
     return 0;
 }
 
-// --- MODO BATTLE (Atualizado para permitir PvP após bots) ---
+// -----------------------------------------------------------------------------------
+// --- MODO BATTLE (Atualizado: Usa spriteName e permite PvP após bots) ---
+// -----------------------------------------------------------------------------------
 OptionsAction ExecutarJogoBattle(BattleSettings settings) {
     
     SetExtrasHabilitados(settings.extras);
@@ -141,6 +143,7 @@ OptionsAction ExecutarJogoBattle(BattleSettings settings) {
     bool j4_ehHumano = (settings.numPlayers == 2); 
     
     // Jogadores
+    // Usando spriteName (e não spritePath)
     Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco", !j1_ehHumano); 
     Jogador j2 = CriarJogador(GetPlayerStartPosition(1), "SpriteVermelho", true);      
     Jogador j3 = CriarJogador(GetPlayerStartPosition(2), "SpriteAzul", true);      
@@ -195,7 +198,7 @@ OptionsAction ExecutarJogoBattle(BattleSettings settings) {
                 }
                 if (j1.vivo && !j2.vivo && !j3.vivo && !j4.vivo) { 
                     // J1 VENCEU
-                    ExecutarTelaVitoriaBattle(j1.spriteName); 
+                    ExecutarTelaVitoriaBattle(j1.spriteName); // <<< Usando spriteName
                     acaoRetorno = OPTIONS_ACAO_MAIN_MENU; break; 
                 }
             } else { // 2 Players
@@ -211,17 +214,16 @@ OptionsAction ExecutarJogoBattle(BattleSettings settings) {
                 } 
                 else if (p1_vivo && bots_mortos && !p4_vivo) {
                     // J1 vivo, Bots mortos, J4 (P2) morto -> J1 VENCEU
-                    ExecutarTelaVitoriaBattle(j1.spriteName); 
+                    ExecutarTelaVitoriaBattle(j1.spriteName); // <<< Usando spriteName
                     acaoRetorno = OPTIONS_ACAO_MAIN_MENU; break;
                 }
                 else if (p4_vivo && bots_mortos && !p1_vivo) {
                     // J4 vivo, Bots mortos, J1 (P1) morto -> J4 VENCEU
-                    ExecutarTelaVitoriaBattle(j4.spriteName); 
+                    ExecutarTelaVitoriaBattle(j4.spriteName); // <<< Usando spriteName
                     acaoRetorno = OPTIONS_ACAO_MAIN_MENU; break;
                 }
-                // *** REMOÇÃO DA CONDIÇÃO DE VITÓRIA COOPERATIVA: ***
-                // Se (p1_vivo && p4_vivo && bots_mortos), o jogo CONTINUA.
-                // A vitória será determinada pelas duas condições 'else if' acima.
+                // *** Se (p1_vivo && p4_vivo && bots_mortos), o jogo CONTINUA
+                // para o combate entre J1 e J4 (PvP). Nenhuma ação é tomada aqui.
             }
         } 
         
@@ -262,7 +264,9 @@ OptionsAction ExecutarJogoBattle(BattleSettings settings) {
     return acaoRetorno;
 }
 
+// -----------------------------------------------------------------------------------
 // --- MODO STORY (Controlador de Níveis) ---
+// -----------------------------------------------------------------------------------
 OptionsAction ExecutarJogoStory(StorySettings settings)
 {
     // Define a ordem dos mapas: Default -> Cave -> Pirate Boat
