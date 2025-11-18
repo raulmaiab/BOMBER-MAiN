@@ -20,15 +20,17 @@ typedef struct {
 #define MAX_EXTRAS 20 
 
 void InicializarExtras(void);
+
+// --- NOVO: Configura se os extras podem spawnar ---
+void SetExtrasHabilitados(bool habilitado);
+// --------------------------------------------------
+
 void SpawnarExtra(Vector2 pixelPos); 
 void DesenharExtras(void);
 void VerificarColetaExtras(Jogador* j); 
 void DescarregarExtras(void);
+void ResetarExtras(void);
 
-// --- NOVO: Função para a IA encontrar itens ---
-// Retorna true se achou algum item dentro do raio.
-// Preenche 'posOut' com a posição do item mais próximo.
 bool GetExtraMaisProximo(Vector2 posJogador, float raioBusca, Vector2* posOut);
-// ----------------------------------------------
 
 #endif // EXTRAS_H

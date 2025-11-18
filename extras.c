@@ -11,6 +11,22 @@ static Texture2D texSpeed;
 static ExtraItem extras[MAX_EXTRAS]; 
 static int quantidadeExtras = 0;
 
+// --- NOVO: Variável de Controle ---
+static bool extrasPermitidos = true; // Padrão ligado
+
+void SetExtrasHabilitados(bool habilitado) {
+    extrasPermitidos = habilitado;
+}
+// ----------------------------------
+
+void ResetarExtras(void)
+{
+    for (int i = 0; i < MAX_EXTRAS; i++) {
+        extras[i].ativo = false;
+    }
+    quantidadeExtras = 0; 
+}
+
 void InicializarExtras(void)
 {
     texRange = LoadTexture("extras/range.png");
@@ -21,10 +37,8 @@ void InicializarExtras(void)
     if (texDefense.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar extras/defense.png");
     if (texSpeed.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar extras/speed.png");
 
-    for (int i = 0; i < MAX_EXTRAS; i++) {
-        extras[i].ativo = false;
-    }
-    quantidadeExtras = 0; 
+    ResetarExtras();
+    extrasPermitidos = true; // Reseta para true por segurança
 }
 
 void DescarregarExtras(void)
@@ -36,6 +50,11 @@ void DescarregarExtras(void)
 
 void SpawnarExtra(Vector2 pos)
 {
+    // --- NOVO: Verifica se está habilitado ---
+    if (!extrasPermitidos) return; 
+    // ----------------------------------------
+
+    // Chance de 30% de spawnar um extra
     if (GetRandomValue(0, 99) >= 30) return; 
 
     if (quantidadeExtras >= MAX_EXTRAS) return;
@@ -56,21 +75,20 @@ void SpawnarExtra(Vector2 pos)
     quantidadeExtras++; 
 }
 
-// --- NOVO: Função para IA ---
 bool GetExtraMaisProximo(Vector2 posJogador, float raioBusca, Vector2* posOut)
 {
-    int melhorIndice = -1;
-    float menorDistancia = raioBusca; // Começa com o raio máximo aceitável
+    // Se extras estiverem desligados, o bot não deve achar nada
+    if (!extrasPermitidos) return false;
 
-    // Centro do jogador
+    int melhorIndice = -1;
+    float menorDistancia = raioBusca; 
+
     Vector2 centerJ = { posJogador.x + TILE_SIZE/2.0f, posJogador.y + TILE_SIZE/2.0f };
 
     for (int i = 0; i < MAX_EXTRAS; i++) 
     {
         if (extras[i].ativo) {
-            // Centro do extra
             Vector2 centerE = { extras[i].pos.x + TILE_SIZE/2.0f, extras[i].pos.y + TILE_SIZE/2.0f };
-            
             float dist = Vector2Distance(centerJ, centerE);
             
             if (dist < menorDistancia) {
@@ -86,11 +104,11 @@ bool GetExtraMaisProximo(Vector2 posJogador, float raioBusca, Vector2* posOut)
     }
     return false;
 }
-// ----------------------------
 
 void VerificarColetaExtras(Jogador* j)
 {
     if (!j || !j->vivo) return;
+    if (!extrasPermitidos) return; // Otimização
 
     Vector2 playerCenter = { j->pos.x + TILE_SIZE / 2.0f, j->pos.y + TILE_SIZE / 2.0f };
 
@@ -98,27 +116,25 @@ void VerificarColetaExtras(Jogador* j)
         if (!extras[i].ativo) continue;
 
         Vector2 extraCenter = { extras[i].pos.x + TILE_SIZE / 2.0f, extras[i].pos.y + TILE_SIZE / 2.0f };
-
         float distancia = Vector2Distance(playerCenter, extraCenter);
 
         if (distancia < TILE_SIZE / 2.0f) { 
             switch (extras[i].type) {
                 case EXTRA_RANGE:
                     j->bombRange++; 
-                    // TraceLog(LOG_INFO, "Jogador coletou Range.");
                     break;
                 case EXTRA_DEFENSE:
                     j->temDefesa = true;
                     j->timerDefesa = 10.0f; 
-                    // TraceLog(LOG_INFO, "Jogador coletou Defesa.");
                     break;
                 case EXTRA_SPEED:
                     j->temVelocidade = true;
                     j->timerVelocidade = 10.0f; 
-                    // TraceLog(LOG_INFO, "Jogador coletou Velocidade.");
                     break;
-                default: break;
+                default:
+                    break;
             }
+            
             extras[i].ativo = false; 
             quantidadeExtras--;      
         }
@@ -127,6 +143,8 @@ void VerificarColetaExtras(Jogador* j)
 
 void DesenharExtras(void)
 {
+    if (!extrasPermitidos) return; // Não desenha nada se estiver desligado
+
     Vector2 origin = { 0, 0 };
     for (int i = 0; i < MAX_EXTRAS; i++) {
         if (!extras[i].ativo) continue;
