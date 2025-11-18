@@ -26,11 +26,7 @@ NodeBombas CriarNodeBombas(void) {
     return g;
 }
 
-<<<<<<< HEAD
 void PlantarBomba(NodeBombas *g, Vector2 posBomba, int range) 
-=======
-void PlantarBomba(NodeBombas *g, Vector2 posBomba) 
->>>>>>> 9319279 (...)
 {
     if (g->quantidade >= MAX_BOMBAS_ATIVAS) return;
     

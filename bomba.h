@@ -7,16 +7,11 @@
 
 #define MAX_BOMBAS_ATIVAS 20
 
-<<<<<<< HEAD
-// Forward Declaration para evitar inclusão circular
-struct Jogador;
-=======
 // Forward Declaration ---
 // Dizemos ao compilador "existe uma struct Jogador",
 // para evitar erros de inclusão circular com jogador.h
 struct Jogador;
 
->>>>>>> 9319279 (...)
 
 typedef struct Bomba 
 {

@@ -17,15 +17,9 @@
 const int SCREEN_WIDTH = 1440;
 const int SCREEN_HEIGHT = 900;
 
-<<<<<<< HEAD
 // Assinaturas
 OptionsAction ExecutarJogoBattle(BattleSettings settings);
 OptionsAction ExecutarJogoStory(StorySettings settings); 
-=======
-// Declarações 
-void ExecutarJogoBattle(BattleSettings settings);
-void ExecutarJogoStory(void);
->>>>>>> 9319279 (...)
 void ExecutarShop(void);
 void ExecutarOther(void);
 
