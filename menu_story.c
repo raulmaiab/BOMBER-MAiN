@@ -1,5 +1,5 @@
 #include "raylib.h"
-#include "menu_battle.h"
+#include "menu_story.h"
 #include "menu.h" 
 #include <stdbool.h>
 #include <math.h> 
@@ -17,7 +17,7 @@ static void DrawMenuEffects(void);
 static void DrawTextGlow(const char* text, Vector2 pos, float size, Color base, Color glow);
 
 // --- Função Principal ---
-bool ExecutarMenuBattle(BattleSettings *settings)
+bool ExecutarMenuStory(StorySettings *settings)
 {
     if (!effectsInitialized) {
         InitMenuEffects();
@@ -25,20 +25,19 @@ bool ExecutarMenuBattle(BattleSettings *settings)
 
     // Variáveis de Estado
     static int currentOption = 0; 
-    static int numPlayers = 1;
-    static bool extras = false;
-    static int mapIndex = 0;
     
-    // Reseta cursor ao entrar
+    static int numPlayers = 1;
+    static bool extras = true; 
+    static int difficultyIdx = 0; 
+    
     currentOption = 0; 
     
-    // Aumentado para 5 (Players, Extras, Map, START, BACK)
+    // Aumentado para 5 (Players, Extras, Difficulty, START, BACK)
     const int numOptions = 5; 
 
     while (!WindowShouldClose())
     {
         // 1. ATUALIZAR (Input)
-        
         if (IsKeyPressed(KEY_DOWN)) {
             currentOption = (currentOption + 1) % numOptions; 
         }
@@ -54,10 +53,9 @@ bool ExecutarMenuBattle(BattleSettings *settings)
                 case 0: numPlayers = (numPlayers == 1) ? 2 : 1; break;
                 case 1: extras = !extras; break;
                 case 2: 
-                    if (isRight) mapIndex = (mapIndex + 1) % 3;
-                    else mapIndex = (mapIndex - 1 + 3) % 3;
+                    if (isRight) difficultyIdx = (difficultyIdx + 1) % 3;
+                    else difficultyIdx = (difficultyIdx - 1 + 3) % 3;
                     break;
-                // Case 3 (Start) e 4 (Back) não têm ação lateral
             }
         }
         
@@ -66,8 +64,10 @@ bool ExecutarMenuBattle(BattleSettings *settings)
             if (currentOption == 3) { // START
                 settings->numPlayers = numPlayers;
                 settings->extras = extras;
-                settings->mapIndex = mapIndex;
-                return true; // Inicia o jogo
+                if (difficultyIdx == 0) settings->difficulty = DIFFICULTY_EASY;
+                else if (difficultyIdx == 1) settings->difficulty = DIFFICULTY_MEDIUM;
+                else settings->difficulty = DIFFICULTY_HARD;
+                return true; 
             }
             if (currentOption == 4) { // BACK
                 return false; // Volta ao menu principal
@@ -88,8 +88,9 @@ bool ExecutarMenuBattle(BattleSettings *settings)
             DrawMenuEffects();
             
             float titleSize = 70;
-            float titleX = (sw - MeasureText("BATTLE SETUP", titleSize)) / 2;
-            DrawTextGlow("BATTLE SETUP", (Vector2){ titleX, sh * 0.1f }, titleSize, 
+            const char* titleText = "STORY MODE";
+            float titleX = (sw - MeasureText(titleText, titleSize)) / 2;
+            DrawTextGlow(titleText, (Vector2){ titleX, sh * 0.1f }, titleSize, 
                          RAYWHITE, COLOR_BLUE_HIGHLIGHT);
                          
             float fontSizeOpcao = 40;
@@ -101,17 +102,14 @@ bool ExecutarMenuBattle(BattleSettings *settings)
             char pText[4]; sprintf(pText, "%d", numPlayers);
             const char* eText = (extras) ? "On" : "Off";
             
-            char mMapText[16];
-            switch(mapIndex) {
-                case 0: sprintf(mMapText, "Default"); break;
-                case 1: sprintf(mMapText, "Cave"); break;
-                case 2: sprintf(mMapText, "Pirate Boat"); break;
-            }
+            const char* dText = "Easy";
+            if (difficultyIdx == 1) dText = "Medium";
+            if (difficultyIdx == 2) dText = "Hard";
 
-            const char* labels[] = {"Players:", "Extras:", "Map:"};
-            const char* values[] = {pText, eText, mMapText};
+            const char* labels[] = {"Players:", "Extras:", "Difficulty:"};
+            const char* values[] = {pText, eText, dText};
             
-            // Desenha as opções configuráveis (0, 1, 2)
+            // Opções configuráveis (0, 1, 2)
             for (int i = 0; i < 3; i++) 
             {
                 Color base = (i == currentOption) ? COLOR_YELLOW_HIGHLIGHT : COLOR_GRAY_OPTION;
@@ -128,30 +126,29 @@ bool ExecutarMenuBattle(BattleSettings *settings)
                              fontSizeOpcao, base, glow);
             }
             
-            // --- Botão START (Índice 3) ---
+            // START (3)
             float startY = menuY_inicial + (3 * espacamento) + 20;
-            float startX = (sw - MeasureText("START", fontSizeOpcao)) / 2;
+            float startX = (sw - MeasureText("START GAME", fontSizeOpcao)) / 2;
             if (currentOption == 3) {
                 bool piscar = fmod(GetTime(), 0.2) > 0.1;
                 Color corBase = piscar ? COLOR_YELLOW_HIGHLIGHT : WHITE;
                 Color corGlow = piscar ? (Color){200, 160, 0, 150} : COLOR_BLUE_HIGHLIGHT;
-                DrawTextGlow("START", (Vector2){ startX, startY }, fontSizeOpcao, corBase, corGlow);
+                DrawTextGlow("START GAME", (Vector2){ startX, startY }, fontSizeOpcao, corBase, corGlow);
             } else {
-                DrawTextGlow("START", (Vector2){ startX, startY }, fontSizeOpcao, COLOR_GRAY_OPTION, (Color){50,50,50,100});
+                DrawTextGlow("START GAME", (Vector2){ startX, startY }, fontSizeOpcao, COLOR_GRAY_OPTION, (Color){50,50,50,100});
             }
-
-            // --- Botão BACK (Índice 4) ---
-            float backY = startY + espacamento; // Logo abaixo do Start
+            
+            // BACK (4)
+            float backY = startY + espacamento; 
             float backX = (sw - MeasureText("BACK", fontSizeOpcao)) / 2;
             if (currentOption == 4) {
-                Color corBase = COLOR_YELLOW_HIGHLIGHT; // Amarelo fixo ao selecionar
+                Color corBase = COLOR_YELLOW_HIGHLIGHT;
                 Color corGlow = (Color){200, 160, 0, 150};
                 DrawTextGlow("BACK", (Vector2){ backX, backY }, fontSizeOpcao, corBase, corGlow);
             } else {
                 DrawTextGlow("BACK", (Vector2){ backX, backY }, fontSizeOpcao, COLOR_GRAY_OPTION, (Color){50,50,50,100});
             }
             
-            // Ajuda
             DrawText("Use UP/DOWN to navigate, LEFT/RIGHT to change, ENTER to select", 
                      (sw - MeasureText("Use UP/DOWN to navigate, LEFT/RIGHT to change, ENTER to select", 20)) / 2, 
                      sh - 40, 20, RAYWHITE);
