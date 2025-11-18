@@ -7,12 +7,15 @@
 #include <stdio.h> 
 #include <float.h> 
 #include <stdlib.h> 
+#include <string.h> // <<< NOVO: Para usar strncpy
 
 #define COLLISION_MARGIN 4.0f 
 #define BOMBA_COOLDOWN_TEMPO 2.5f 
 
-// --- Funções Ajudantes ---
+// --- Funções Ajudantes (Sem alteração) ---
+// ... (SnapToGrid, AlinharEPlantarBomba, IsBombAt, IsInCorner, IsDirectionSafe, IsDirectionWalkable, MoverJogadorX, MoverJogadorY) ...
 
+// Funções Ajudantes
 static void SnapToGrid(Jogador* j, int direction) {
     Vector2 center = { j->pos.x + TILE_SIZE/2.0f, j->pos.y + TILE_SIZE/2.0f };
     Vector2 gridPos = GetGridPosFromPixels(center);
@@ -53,7 +56,6 @@ static bool IsInCorner(int x, int y) {
     return false;
 }
 
-// Verifica se é seguro (SEM BOMBA, SEM PAREDE) - Usado no Wandering
 static bool IsDirectionSafe(int startX, int startY, int dir, NodeBombas *gBombas) {
     int dx = 0, dy = 0;
     if (dir == 0) dy = -1; else if (dir == 1) dy = 1; else if (dir == 2) dx = -1; else if (dir == 3) dx = 1;  
@@ -65,14 +67,12 @@ static bool IsDirectionSafe(int startX, int startY, int dir, NodeBombas *gBombas
     return true;
 }
 
-// Verifica APENAS se é chão (IGNORA BOMBAS) - Usado no Fleeing/Panic
 static bool IsDirectionWalkable(int startX, int startY, int dir) {
     int dx = 0, dy = 0;
     if (dir == 0) dy = -1; else if (dir == 1) dy = 1; else if (dir == 2) dx = -1; else if (dir == 3) dx = 1;  
     int checkX = startX + dx;
     int checkY = startY + dy;
     if (checkX < 0 || checkX >= MAP_GRID_WIDTH || checkY < 0 || checkY >= MAP_GRID_HEIGHT) return false;
-    // Só importa se é parede ou bloco. Bomba é "andável" na fuga.
     if (GetTileTipo(checkX, checkY) != TILE_EMPTY) return false; 
     return true;
 }
@@ -128,6 +128,11 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
 {
     Jogador j;
     j.pos = posInicial; j.velocidade = 2.5f; j.vivo = true;
+    
+    // Adicionar o nome do sprite/cor
+    strncpy(j.spriteName, pastaSprites, MAX_SPRITE_NAME_LENGTH - 1); // <<< PREENCHIMENTO DO CAMPO
+    j.spriteName[MAX_SPRITE_NAME_LENGTH - 1] = '\0';
+    
     char pathBuffer[256]; 
     sprintf(pathBuffer, "%s/andando.png", pastaSprites); j.texParado = LoadTexture(pathBuffer);
     sprintf(pathBuffer, "%s/costas1.png", pastaSprites); j.texCima[0] = LoadTexture(pathBuffer);
@@ -162,13 +167,13 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
     return j;
 }
 
-// --- AtualizarJogador ---
+// --- AtualizarJogador (Sem alteração) ---
 void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRight, int keyBomb, 
                       NodeBombas *gBombas, float deltaTime, 
                       Jogador* targetHuman1, Jogador* targetHuman2)
 {
     if (!j->vivo) return;
-
+    // ... (restante da função AtualizarJogador sem alteração) ...
     float speedMultiplier = 1.0f;
     if (j->temVelocidade) {
         j->timerVelocidade -= deltaTime;
@@ -325,7 +330,6 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
                 else if (!acabouDePlantar && Vector2Distance(posAntes, j->pos) < 0.05f) 
                 {
                     // Se travou no meio da fuga, usa IsDirectionWalkable (IGNORA BOMBAS)
-                    // para encontrar QUALQUER saída, mesmo que passe por cima de bombas.
                     
                     int gx = (int)myGridPos.x;
                     int gy = (int)myGridPos.y;
@@ -370,7 +374,6 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
         }
 
         // --- CONFIGURAÇÃO DE MOVIMENTO ---
-        // No estado FLEEING, SEMPRE ignora bombas para garantir que não trava na própria bomba
         bool ignoreBombs = (j->botState == BOT_STATE_FLEEING);
 
         j->currentDir = DIR_PARADO; 
@@ -420,6 +423,8 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
     }
 }
 
+
+// --- DesenharJogador (Sem alteração) ---
 void DesenharJogador(const Jogador* j)
 {
     if (!j->vivo) return; 
@@ -448,6 +453,7 @@ void DesenharJogador(const Jogador* j)
     DrawTexturePro(texToDraw, sourceRec, destRec, origin, 0.0f, tint);
 }
 
+// --- DestruirJogador (Sem alteração) ---
 void DestruirJogador(Jogador* j)
 {
     UnloadTexture(j->texParado);

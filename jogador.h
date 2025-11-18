@@ -15,6 +15,7 @@ typedef enum {
 // --- Constantes ---
 #define NUM_FRAMES_ANDAR 3 
 #define ANIM_FRAME_SPEED 0.15f 
+#define MAX_SPRITE_NAME_LENGTH 16 // <<< NOVO: Definição do tamanho para o nome/cor
 typedef enum { DIR_CIMA=0, DIR_BAIXO, DIR_ESQUERDA, DIR_DIREITA, DIR_PARADO } AnimDirection;
 
 typedef struct Jogador
@@ -33,6 +34,8 @@ typedef struct Jogador
     AnimDirection currentDir;   
 
     bool vivo;         
+    
+    char spriteName[MAX_SPRITE_NAME_LENGTH]; // <<< CAMPO CORRIGIDO: Nome do sprite/cor
     
     // Variáveis do Bot
     bool ehBot;

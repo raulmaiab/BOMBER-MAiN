@@ -5,6 +5,9 @@
 #include <math.h> 
 #include <stdio.h> 
 
+// Note: MAX_RAIN_DROPS, MAX_PULSES, RainDrop, Pulse, e as cores
+// são agora lidas de "menu.h" para evitar redefinição.
+
 // --- Variáveis Globais (Efeitos) ---
 static RainDrop rain[MAX_RAIN_DROPS];
 static Pulse pulses[MAX_PULSES];
@@ -28,12 +31,11 @@ bool ExecutarMenuStory(StorySettings *settings)
     
     static int numPlayers = 1;
     static bool extras = true; 
-    static int difficultyIdx = 0; 
     
     currentOption = 0; 
     
-    // Aumentado para 5 (Players, Extras, Difficulty, START, BACK)
-    const int numOptions = 5; 
+    // Total de 4 (Players, Extras, START, BACK)
+    const int numOptions = 4; 
 
     while (!WindowShouldClose())
     {
@@ -46,30 +48,23 @@ bool ExecutarMenuStory(StorySettings *settings)
         }
 
         if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT)) {
-            bool isRight = IsKeyPressed(KEY_RIGHT);
             
             switch (currentOption)
             {
-                case 0: numPlayers = (numPlayers == 1) ? 2 : 1; break;
-                case 1: extras = !extras; break;
-                case 2: 
-                    if (isRight) difficultyIdx = (difficultyIdx + 1) % 3;
-                    else difficultyIdx = (difficultyIdx - 1 + 3) % 3;
-                    break;
+                case 0: numPlayers = (numPlayers == 1) ? 2 : 1; break; // Players
+                case 1: extras = !extras; break; // Extras
             }
         }
         
         // Confirmação
         if (IsKeyReleased(KEY_ENTER)) { 
-            if (currentOption == 3) { // START
+            if (currentOption == 2) { // START
                 settings->numPlayers = numPlayers;
                 settings->extras = extras;
-                if (difficultyIdx == 0) settings->difficulty = DIFFICULTY_EASY;
-                else if (difficultyIdx == 1) settings->difficulty = DIFFICULTY_MEDIUM;
-                else settings->difficulty = DIFFICULTY_HARD;
+                // Dificuldade removida
                 return true; 
             }
-            if (currentOption == 4) { // BACK
+            if (currentOption == 3) { // BACK
                 return false; // Volta ao menu principal
             }
         }
@@ -102,15 +97,11 @@ bool ExecutarMenuStory(StorySettings *settings)
             char pText[4]; sprintf(pText, "%d", numPlayers);
             const char* eText = (extras) ? "On" : "Off";
             
-            const char* dText = "Easy";
-            if (difficultyIdx == 1) dText = "Medium";
-            if (difficultyIdx == 2) dText = "Hard";
-
-            const char* labels[] = {"Players:", "Extras:", "Difficulty:"};
-            const char* values[] = {pText, eText, dText};
+            const char* labels[] = {"Players:", "Extras:"}; 
+            const char* values[] = {pText, eText}; 
             
-            // Opções configuráveis (0, 1, 2)
-            for (int i = 0; i < 3; i++) 
+            // Opções configuráveis (0, 1)
+            for (int i = 0; i < 2; i++) 
             {
                 Color base = (i == currentOption) ? COLOR_YELLOW_HIGHLIGHT : COLOR_GRAY_OPTION;
                 Color glow = (i == currentOption) ? (Color){200, 160, 0, 150} : (Color){50,50,50,100};
@@ -126,10 +117,10 @@ bool ExecutarMenuStory(StorySettings *settings)
                              fontSizeOpcao, base, glow);
             }
             
-            // START (3)
-            float startY = menuY_inicial + (3 * espacamento) + 20;
+            // START (Índice 2)
+            float startY = menuY_inicial + (2 * espacamento) + 20; 
             float startX = (sw - MeasureText("START GAME", fontSizeOpcao)) / 2;
-            if (currentOption == 3) {
+            if (currentOption == 2) {
                 bool piscar = fmod(GetTime(), 0.2) > 0.1;
                 Color corBase = piscar ? COLOR_YELLOW_HIGHLIGHT : WHITE;
                 Color corGlow = piscar ? (Color){200, 160, 0, 150} : COLOR_BLUE_HIGHLIGHT;
@@ -138,10 +129,10 @@ bool ExecutarMenuStory(StorySettings *settings)
                 DrawTextGlow("START GAME", (Vector2){ startX, startY }, fontSizeOpcao, COLOR_GRAY_OPTION, (Color){50,50,50,100});
             }
             
-            // BACK (4)
+            // BACK (Índice 3)
             float backY = startY + espacamento; 
             float backX = (sw - MeasureText("BACK", fontSizeOpcao)) / 2;
-            if (currentOption == 4) {
+            if (currentOption == 3) {
                 Color corBase = COLOR_YELLOW_HIGHLIGHT;
                 Color corGlow = (Color){200, 160, 0, 150};
                 DrawTextGlow("BACK", (Vector2){ backX, backY }, fontSizeOpcao, corBase, corGlow);
@@ -159,7 +150,7 @@ bool ExecutarMenuStory(StorySettings *settings)
     return false; 
 }
 
-// --- Funções de Efeito (Sem alteração) ---
+// --- Funções de Efeito (Com lógica atualizada para usar os macros de menu.h) ---
 static void InitMenuEffects(void) {
     int screenWidth = GetScreenWidth();
     int screenHeight = GetScreenHeight();
