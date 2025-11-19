@@ -109,8 +109,12 @@ bool ExecutarTelaInicio(void)
         EndDrawing();
     }
 
-    if (hasBg) UnloadTexture(bg);
-    if (hasFont) UnloadFont(font);
+    if (hasBg) {
+        UnloadTexture(bg);
+    }
+    if (hasFont){ 
+        UnloadFont(font);
+    }
 
     return startGame && !WindowShouldClose();
 }
