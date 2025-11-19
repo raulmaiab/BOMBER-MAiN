@@ -5,4 +5,4 @@
 
 bool ExecutarTelaInicio(void);
 
-#endif // INICIO_H
+#endif 
