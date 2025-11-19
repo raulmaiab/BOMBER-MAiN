@@ -7,6 +7,7 @@
 static Texture2D texRange;
 static Texture2D texDefense;
 static Texture2D texSpeed;
+static Texture2D texLimit;
 
 static ExtraItem extras[MAX_EXTRAS]; 
 static int quantidadeExtras = 0;
@@ -32,10 +33,12 @@ void InicializarExtras(void)
     texRange = LoadTexture("extras/range.png");
     texDefense = LoadTexture("extras/defense.png");
     texSpeed = LoadTexture("extras/speed.png");
+    texLimit = LoadTexture("extras/plus.png");
 
     if (texRange.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar extras/range.png");
     if (texDefense.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar extras/defense.png");
     if (texSpeed.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar extras/speed.png");
+    if (texLimit.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar extras/plus.png");
 
     ResetarExtras();
     extrasPermitidos = true; // Reseta para true por segurança
@@ -46,6 +49,7 @@ void DescarregarExtras(void)
     UnloadTexture(texRange);
     UnloadTexture(texDefense);
     UnloadTexture(texSpeed);
+    UnloadTexture(texLimit);
 }
 
 void SpawnarExtra(Vector2 pos)
@@ -131,6 +135,8 @@ void VerificarColetaExtras(Jogador* j)
                     j->temVelocidade = true;
                     j->timerVelocidade = 10.0f; 
                     break;
+                case EXTRA_MAX:
+                    j->bombLimit++;
                 default:
                     break;
             }
@@ -156,6 +162,7 @@ void DesenharExtras(void)
             case EXTRA_RANGE:    t = &texRange; c = RED; break;
             case EXTRA_DEFENSE:  t = &texDefense; c = BLUE; break;
             case EXTRA_SPEED:    t = &texSpeed; c = GREEN; break;
+            case EXTRA_MAX:      t = &texLimit; c = YELLOW; break;
             default: break;
         }
 

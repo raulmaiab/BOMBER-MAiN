@@ -46,7 +46,7 @@ typedef struct Jogador
     
     float bombaCooldown; 
     
-    // --- NOVO: Atributos de Power-ups (Extras) ---
+    //Atributos de Power-ups (Extras) ---
     int bombRange;          // Alcance da bomba (Começa em 1)
     
     bool temDefesa;         // Se tem escudo
@@ -54,6 +54,8 @@ typedef struct Jogador
     
     bool temVelocidade;     // Se tem speed boost
     float timerVelocidade;  // Tempo restante da velocidade
+
+    int bombLimit;          // Limite de Bombas Simultaneas
     // ---------------------------------------------
     
 } Jogador;

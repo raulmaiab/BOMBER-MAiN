@@ -163,6 +163,7 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
     j.bombRange = 1;
     j.temDefesa = false; j.timerDefesa = 0.0f;
     j.temVelocidade = false; j.timerVelocidade = 0.0f;
+    j.bombLimit = 1;
 
     return j;
 }
