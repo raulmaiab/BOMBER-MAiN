@@ -8,14 +8,16 @@
 #include "mapa.h"       
 #include "jogador.h"    
 #include "bomba.h"      
-#include "explosao.h"   
-#include "derrota.h"    
+#include "explosao.h" 
+#include "derrota.h"  
 #include "vitoria.h"
 #include "vitoria_battle.h" 
 #include "extras.h"     
+#include "historico.h"    // Incluído
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>    
+#include <string.h>       // Incluído para strncpy
 
 const int SCREEN_WIDTH = 1440;
 const int SCREEN_HEIGHT = 900;
@@ -27,6 +29,9 @@ OptionsAction ExecutarNivelStory(StorySettings settings, const char* nomeMapa, i
 void ExecutarShop(void);
 void ExecutarOther(void);
 
+// -----------------------------------------------------------------------------------
+// --- MAIN LOOP ---
+// -----------------------------------------------------------------------------------
 int main(void)
 {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "BomberMain");
@@ -194,10 +199,26 @@ OptionsAction ExecutarJogoBattle(BattleSettings settings) {
             if (settings.numPlayers == 1) {
                 // Modo 1P: J1 (Branco) vs. Bots (Vermelho, Azul, Preto)
                 if (!j1.vivo) { 
+                    // --- REGISTRO DE DERROTA ---
+                    RegistroBatalha reg;
+                    strncpy(reg.modo, "Battle (1P)", sizeof(reg.modo) - 1);
+                    reg.modo[sizeof(reg.modo) - 1] = '\0';
+                    strncpy(reg.vencedor, "Bots (IA)", sizeof(reg.vencedor) - 1);
+                    reg.vencedor[sizeof(reg.vencedor) - 1] = '\0';
+                    AdicionarRegistroHistorico(reg);
+                    // ---------------------------
                     ExecutarTelaDerrota(); acaoRetorno = OPTIONS_ACAO_MAIN_MENU; break; 
                 }
                 if (j1.vivo && !j2.vivo && !j3.vivo && !j4.vivo) { 
                     // J1 VENCEU
+                    // --- REGISTRO DE VITORIA ---
+                    RegistroBatalha reg;
+                    strncpy(reg.modo, "Battle (1P)", sizeof(reg.modo) - 1);
+                    reg.modo[sizeof(reg.modo) - 1] = '\0';
+                    strncpy(reg.vencedor, "Player 1 (Branco)", sizeof(reg.vencedor) - 1);
+                    reg.vencedor[sizeof(reg.vencedor) - 1] = '\0';
+                    AdicionarRegistroHistorico(reg);
+                    // ---------------------------
                     ExecutarTelaVitoriaBattle(j1.spriteName); // <<< Usando spriteName
                     acaoRetorno = OPTIONS_ACAO_MAIN_MENU; break; 
                 }
@@ -210,15 +231,39 @@ OptionsAction ExecutarJogoBattle(BattleSettings settings) {
 
                 if (!p1_vivo && !p4_vivo) { 
                     // Ambos humanos perderam
+                    // --- REGISTRO DE DERROTA ---
+                    RegistroBatalha reg;
+                    strncpy(reg.modo, "Battle (2P)", sizeof(reg.modo) - 1);
+                    reg.modo[sizeof(reg.modo) - 1] = '\0';
+                    strncpy(reg.vencedor, "Bots (IA)", sizeof(reg.vencedor) - 1);
+                    reg.vencedor[sizeof(reg.vencedor) - 1] = '\0';
+                    AdicionarRegistroHistorico(reg);
+                    // ---------------------------
                     ExecutarTelaDerrota(); acaoRetorno = OPTIONS_ACAO_MAIN_MENU; break; 
                 } 
                 else if (p1_vivo && bots_mortos && !p4_vivo) {
                     // J1 vivo, Bots mortos, J4 (P2) morto -> J1 VENCEU
+                    // --- REGISTRO DE VITORIA J1 ---
+                    RegistroBatalha reg;
+                    strncpy(reg.modo, "Battle (2P)", sizeof(reg.modo) - 1);
+                    reg.modo[sizeof(reg.modo) - 1] = '\0';
+                    strncpy(reg.vencedor, "Player 1 (Branco) - PvP Vitoria", sizeof(reg.vencedor) - 1);
+                    reg.vencedor[sizeof(reg.vencedor) - 1] = '\0';
+                    AdicionarRegistroHistorico(reg);
+                    // ------------------------------
                     ExecutarTelaVitoriaBattle(j1.spriteName); // <<< Usando spriteName
                     acaoRetorno = OPTIONS_ACAO_MAIN_MENU; break;
                 }
                 else if (p4_vivo && bots_mortos && !p1_vivo) {
                     // J4 vivo, Bots mortos, J1 (P1) morto -> J4 VENCEU
+                    // --- REGISTRO DE VITORIA J4 ---
+                    RegistroBatalha reg;
+                    strncpy(reg.modo, "Battle (2P)", sizeof(reg.modo) - 1);
+                    reg.modo[sizeof(reg.modo) - 1] = '\0';
+                    strncpy(reg.vencedor, "Player 2 (Preto) - PvP Vitoria", sizeof(reg.vencedor) - 1);
+                    reg.vencedor[sizeof(reg.vencedor) - 1] = '\0';
+                    AdicionarRegistroHistorico(reg);
+                    // ------------------------------
                     ExecutarTelaVitoriaBattle(j4.spriteName); // <<< Usando spriteName
                     acaoRetorno = OPTIONS_ACAO_MAIN_MENU; break;
                 }
@@ -435,7 +480,18 @@ OptionsAction ExecutarNivelStory(StorySettings settings, const char* nomeMapa, i
                     break; 
                 } 
             }
-            if (todosHumanosMortos) { ExecutarTelaDerrota(); acaoRetorno = OPTIONS_ACAO_MAIN_MENU; break; }
+            if (todosHumanosMortos) { 
+                // --- REGISTRO DE DERROTA STORY ---
+                RegistroBatalha reg;
+                strncpy(reg.modo, TextFormat("Story Nivel %d (%dP)", nivel + 1, numHumanos), sizeof(reg.modo) - 1);
+                reg.modo[sizeof(reg.modo) - 1] = '\0'; // Garantir terminação
+                strncpy(reg.vencedor, "Bots (IA)", sizeof(reg.vencedor) - 1);
+                reg.vencedor[sizeof(reg.vencedor) - 1] = '\0';
+                
+                AdicionarRegistroHistorico(reg);
+                // ---------------------------------
+                ExecutarTelaDerrota(); acaoRetorno = OPTIONS_ACAO_MAIN_MENU; break; 
+            }
 
             // --- LÓGICA DE VITÓRIA ---
             bool todosBotsMortos = true;
@@ -447,6 +503,18 @@ OptionsAction ExecutarNivelStory(StorySettings settings, const char* nomeMapa, i
             }
             if (todosBotsMortos) { 
                 *nivelVitoria = true; 
+                
+                // --- REGISTRO DE VITORIA STORY ---
+                RegistroBatalha reg;
+                const char* vencedor_str = (numHumanos == 1) ? "Player 1 (Branco)" : "Equipe Humana (Branco/Preto)";
+                
+                strncpy(reg.modo, TextFormat("Story Nivel %d (%dP)", nivel + 1, numHumanos), sizeof(reg.modo) - 1);
+                reg.modo[sizeof(reg.modo) - 1] = '\0';
+                strncpy(reg.vencedor, vencedor_str, sizeof(reg.vencedor) - 1);
+                reg.vencedor[sizeof(reg.vencedor) - 1] = '\0';
+                
+                AdicionarRegistroHistorico(reg);
+                // ---------------------------------
                 acaoRetorno = OPTIONS_ACAO_MAIN_MENU; 
                 break; 
             }
@@ -493,6 +561,9 @@ OptionsAction ExecutarNivelStory(StorySettings settings, const char* nomeMapa, i
     return acaoRetorno;
 }
 
+// -----------------------------------------------------------------------------------
+// --- TELAS SIMPLES ---
+// -----------------------------------------------------------------------------------
 void ExecutarShop(void) {
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_ESCAPE)) break;

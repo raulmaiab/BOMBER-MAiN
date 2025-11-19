@@ -1,0 +1,178 @@
+#include "raylib.h"
+#include "inicio.h"
+#include "menu.h"
+#include "menu_battle.h"
+#include "menu_story.h" 
+#include "menu_prox.h"  
+#include "options.h"    
+#include "mapa.h"       
+#include "jogador.h"    
+#include "bomba.h"      
+#include "explosao.h"   
+#include "derrota.h"    
+#include "vitoria.h"
+#include "vitoria_battle.h" 
+#include "extras.h"     
+#include "registros.h" // <-- NOVO: Incluir o header de registros!
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>    
+
+const int SCREEN_WIDTH = 1440;
+const int SCREEN_HEIGHT = 900;
+
+// Assinaturas
+OptionsAction ExecutarJogoBattle(BattleSettings settings);
+OptionsAction ExecutarJogoStory(StorySettings settings); 
+OptionsAction ExecutarNivelStory(StorySettings settings, const char* nomeMapa, int nivel, bool* nivelVitoria); 
+void ExecutarShop(void);
+void ExecutarOther(void);
+void ExecutarHistorico(void); // <-- NOVA ASSINATURA
+
+// NOVO: Função wrapper para o histórico (se não quiser mexer no loop principal)
+void ExecutarHistorico(void) {
+    while (!WindowShouldClose()) {
+        DesenharTelaRegistros(); // Assume que esta função é um loop de tela
+        
+        // Esta lógica DEVE estar em DesenharTelaRegistros para retornar
+        // Se DesenharTelaRegistros retornar um bool/int, o loop fica mais limpo.
+        // No momento, estamos usando um loop simples:
+        
+        // Lógica de "Voltar" (copiada da lógica do botão VOLTAR de registros.c)
+        Rectangle rectVoltar = { GetScreenWidth() / 2 - 75, GetScreenHeight() - 150, 150, 50 };
+        if (CheckCollisionPointRec(GetMousePosition(), rectVoltar) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+             break;
+        }
+        
+        EndDrawing();
+        // O BeginDrawing é feito fora do loop se DesenharTelaRegistros não fizer o próprio BeginDrawing
+        // Para simplificar, vou assumir que DesenharTelaRegistros faz Begin/EndDrawing, como em Shop/Other.
+        // Mas o código de registros.c que enviei faz BeginDrawing fora, então vamos adaptar o wrapper:
+        
+        BeginDrawing();
+            DesenharTelaRegistros();
+        EndDrawing();
+    }
+}
+
+
+int main(void)
+{
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "BomberMain");
+    ToggleFullscreen();
+    SetTargetFPS(60);
+    
+    InicializarExtras(); 
+
+    bool deveContinuar = ExecutarTelaInicio();
+    
+    BattleSettings lastBattleSettings = {0};
+    StorySettings lastStorySettings = {0};
+    OpcaoMenu ultimoModo = ESCOLHA_NENHUMA_OU_FECHOU;
+    
+    while (deveContinuar && !WindowShouldClose())
+    {
+        OpcaoMenu escolha = ExecutarTelaMenu();
+        
+        switch (escolha)
+        {
+            case ESCOLHA_BATTLE:
+                { 
+                    BattleSettings settings; 
+                    bool iniciar = ExecutarMenuBattle(&settings); 
+                    
+                    if (iniciar)
+                    {
+                        lastBattleSettings = settings;
+                        ultimoModo = ESCOLHA_BATTLE;
+                        
+                        OptionsAction acao;
+                        
+                        // Loop para RESTART no MODO BATTLE
+                        do {
+                            acao = ExecutarJogoBattle(lastBattleSettings); 
+                            
+                            if (acao == OPTIONS_ACAO_EDIT_GAME) {
+                                escolha = ESCOLHA_BATTLE; 
+                                break; 
+                            }
+                            
+                        } while (acao == OPTIONS_ACAO_RESTART);
+                        
+                        if (acao == OPTIONS_ACAO_EDIT_GAME) {
+                            continue;
+                        }
+                    }
+                }
+                break;
+            
+            case ESCOLHA_STORY: 
+                {
+                    StorySettings sSettings;
+                    bool iniciar = ExecutarMenuStory(&sSettings);
+                    if (iniciar)
+                    {
+                        lastStorySettings = sSettings;
+                        ultimoModo = ESCOLHA_STORY;
+                        
+                        OptionsAction acao;
+                        
+                        // Loop para RESTART no MODO STORY
+                        do {
+                            acao = ExecutarJogoStory(lastStorySettings); 
+                            
+                            if (acao == OPTIONS_ACAO_EDIT_GAME) {
+                                escolha = ESCOLHA_STORY; 
+                                break; 
+                            }
+                            
+                        } while (acao == OPTIONS_ACAO_RESTART);
+                        
+                        if (acao == OPTIONS_ACAO_EDIT_GAME) {
+                            continue;
+                        }
+                    }
+                }
+                break;
+
+            case ESCOLHA_HISTORY: ExecutarHistorico(); break; // <-- NOVO: Chamada para a tela de histórico
+            case ESCOLHA_SHOP: ExecutarShop(); break;
+            case ESCOLHA_OTHER: ExecutarOther(); break;
+            case ESCOLHA_SAIR:
+            case ESCOLHA_NENHUMA_OU_FECHOU:
+                deveContinuar = false;
+                break;
+        }
+    }
+    
+    DescarregarExtras();
+    CloseWindow(); 
+    return 0;
+}
+
+// -----------------------------------------------------------------------------------
+// --- FUNÇÕES DE JOGO (Sem Alteração na Lógica) ---
+// -----------------------------------------------------------------------------------
+OptionsAction ExecutarJogoBattle(BattleSettings settings) { /* ... */ }
+OptionsAction ExecutarJogoStory(StorySettings settings) { /* ... */ }
+OptionsAction ExecutarNivelStory(StorySettings settings, const char* nomeMapa, int nivel, bool* nivelVitoria) { /* ... */ }
+
+// Implementações simples dos outros menus (ajustadas para Raylib)
+// NOTA: Seus ExecutarShop e ExecutarOther não usam Begin/EndDrawing, o que pode causar problemas se chamados fora de um loop Begin/EndDrawing.
+// No meu Exemplo de ExecutarHistorico acima, assumi que você corrigiria isso, mas para manter a consistência do seu código, vou manter o que estava:
+void ExecutarShop(void) {
+    while (!WindowShouldClose()) {
+        if (IsKeyPressed(KEY_ESCAPE)) break;
+        BeginDrawing(); ClearBackground(BROWN);
+        DrawText("LOJA - Pressione ESC para voltar", 190, 200, 20, WHITE);
+        EndDrawing();
+    }
+}
+void ExecutarOther(void) {
+    while (!WindowShouldClose()) {
+        if (IsKeyPressed(KEY_ESCAPE)) break;
+        BeginDrawing(); ClearBackground(DARKGRAY);
+        DrawText("OUTROS/OPCOES - Pressione ESC para voltar", 190, 200, 20, WHITE);
+        EndDrawing();
+    }
+}
