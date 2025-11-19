@@ -56,6 +56,7 @@ typedef struct Jogador
     float timerVelocidade;  // Tempo restante da velocidade
 
     int bombLimit;          // Limite de Bombas Simultaneas
+    int bombasAtivas;       // Bombas Ativas
     // ---------------------------------------------
     
 } Jogador;

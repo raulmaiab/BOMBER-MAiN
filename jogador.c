@@ -133,6 +133,7 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
     strncpy(j.spriteName, pastaSprites, MAX_SPRITE_NAME_LENGTH - 1); // <<< PREENCHIMENTO DO CAMPO
     j.spriteName[MAX_SPRITE_NAME_LENGTH - 1] = '\0';
     
+    //--- Design e Movimentacao
     char pathBuffer[256]; 
     sprintf(pathBuffer, "%s/andando.png", pastaSprites); j.texParado = LoadTexture(pathBuffer);
     sprintf(pathBuffer, "%s/costas1.png", pastaSprites); j.texCima[0] = LoadTexture(pathBuffer);
@@ -147,6 +148,7 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
     sprintf(pathBuffer, "%s/direita3.png", pastaSprites); j.texDireita[2] = LoadTexture(pathBuffer);
     j.currentFrame = 0; j.frameTimer = 0.0f; j.currentDir = DIR_BAIXO; 
     
+    //--- Mecanica dos BOTs
     j.ehBot = ehBot;
     if (j.ehBot) {
         j.botState = BOT_STATE_WANDERING; 
@@ -157,13 +159,17 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
         j.botStateTimer = 1.0f; 
         j.botMoveDirecao = 4; 
     }
+
+
     j.botLastBombPos = (Vector2){0,0};
     j.bombaCooldown = 0.0f; 
 
+    //--- Controle dos extras
     j.bombRange = 1;
     j.temDefesa = false; j.timerDefesa = 0.0f;
     j.temVelocidade = false; j.timerVelocidade = 0.0f;
     j.bombLimit = 1;
+    j.bombasAtivas = 0;
 
     return j;
 }
