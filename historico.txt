@@ -4,3 +4,4 @@
 2025-11-19 10:41:13 | Battle (1P) | Bots (IA)
 2025-11-19 10:41:40 | Battle (1P) | Player 1 (Branco)
 2025-11-19 10:44:40 | Battle (2P) | Player 2 (Preto) - PvP Vitoria
+2025-11-19 19:27:54 | Battle (1P) | Player 1 (Branco)
