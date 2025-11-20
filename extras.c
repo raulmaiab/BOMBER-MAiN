@@ -54,7 +54,6 @@ void DescarregarExtras(void)
 
 void SpawnarExtra(Vector2 pos)
 {
-    // --- NOVO: Verifica se está habilitado ---
     if (!extrasPermitidos) return; 
     // ----------------------------------------
 

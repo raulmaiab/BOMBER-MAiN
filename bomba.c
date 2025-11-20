@@ -18,11 +18,12 @@ NodeBombas CriarNodeBombas(void) {
     
     for (int i = 0; i < MAX_BOMBAS_ATIVAS; i++) {
         g.bombas[i].ativa = false;
+        g.bombas[i].dono = NULL;
     }
     return g;
 }
 
-void PlantarBomba(NodeBombas *g, Vector2 posBomba, int range) 
+void PlantarBomba(NodeBombas *g, Vector2 posBomba, int range, Jogador dono) 
 {
     if (g->quantidade >= MAX_BOMBAS_ATIVAS) return;
     
@@ -39,6 +40,7 @@ void PlantarBomba(NodeBombas *g, Vector2 posBomba, int range)
     b->ativa = true;           
     b->currentFrame = 0; 
     b->frameTimer = 0.0f;
+    b->dono = dono;
     g->quantidade++;
 }
 
@@ -64,17 +66,22 @@ bool AtualizarBombas(NodeBombas *g, float deltaTime, NodeExplosoes *gExplosoes, 
 
         if (b->tempoExplosao <= 0) {
             
-            // --- AQUI ESTÁ A CORREÇÃO ESTRUTURAL ---
-            // Em vez de processar a explosão aqui, chamamos explosao.c
-            // Isso garante que SpawnarExtra seja chamado corretamente.
+            // chama explosao.c para processar explosão 
             CriarExplosao(gExplosoes, b->posicao, b->raioExplosao, jogadores, numJogadores);
-            // ---------------------------------------
             
+            if (b->dono) 
+            {
+                b->dono->bombasAtivas--;
+                if (b->dono->bombasAtivas < 0) b->dono->bombasAtivas = 0;
+            }
+
             algumaExplodiu = true;
             b->ativa = false; 
-
+            
+            // remove bomba do array (substitui pelo último)
             g->bombas[i] = g->bombas[g->quantidade - 1];
             g->bombas[g->quantidade - 1].ativa = false; 
+            g->bombas[g->quantidade - 1].dono = NULL;
             g->quantidade--;
             i--; 
         }

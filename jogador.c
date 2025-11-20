@@ -29,12 +29,18 @@ static void SnapToGrid(Jogador* j, int direction) {
 }
 
 static void AlinharEPlantarBomba(Jogador* j, NodeBombas *gBombas) {
+
+    // checa limite do jogador antes de tentar plantar
+    if (j->bombasAtivas >= j->bombLimit) return;
+
     float centerX = j->pos.x + (TILE_SIZE / 2.0f);
     float centerY = j->pos.y + (TILE_SIZE / 2.0f);
     int gridX = (int)(centerX / TILE_SIZE);
     int gridY = (int)(centerY / TILE_SIZE);
     Vector2 posBombaAlinhada = { (float)gridX * TILE_SIZE, (float)gridY * TILE_SIZE };
-    PlantarBomba(gBombas, posBombaAlinhada, j->bombRange); 
+    PlantarBomba(gBombas, posBombaAlinhada, j->bombRange, j); 
+
+    
 }
 
 static bool IsBombAt(NodeBombas *gBombas, int gridX, int gridY) {
@@ -159,8 +165,6 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
         j.botStateTimer = 1.0f; 
         j.botMoveDirecao = 4; 
     }
-
-
     j.botLastBombPos = (Vector2){0,0};
     j.bombaCooldown = 0.0f; 
 
@@ -174,13 +178,13 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
     return j;
 }
 
-// --- AtualizarJogador (Sem alteração) ---
+// --- AtualizarJogador 
 void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRight, int keyBomb, 
                       NodeBombas *gBombas, float deltaTime, 
                       Jogador* targetHuman1, Jogador* targetHuman2)
 {
     if (!j->vivo) return;
-    // ... (restante da função AtualizarJogador sem alteração) ...
+
     float speedMultiplier = 1.0f;
     if (j->temVelocidade) {
         j->timerVelocidade -= deltaTime;
@@ -234,7 +238,7 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
                             else if (j->botMoveDirecao == 2) oposto = 3; 
                             else if (j->botMoveDirecao == 3) oposto = 2; 
 
-                            // Usa IsDirectionSafe (sem bomba) para PLANEJAR
+                            // Usa IsDirectionSafe (sem  bomba) para PLANEJAR
                             if (oposto != -1 && IsDirectionSafe(gridX, gridY, oposto, gBombas)) {
                                 escapeDir = oposto;
                             }
@@ -431,7 +435,7 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
 }
 
 
-// --- DesenharJogador (Sem alteração) ---
+// --- DesenharJogador 
 void DesenharJogador(const Jogador* j)
 {
     if (!j->vivo) return; 
@@ -460,7 +464,7 @@ void DesenharJogador(const Jogador* j)
     DrawTexturePro(texToDraw, sourceRec, destRec, origin, 0.0f, tint);
 }
 
-// --- DestruirJogador (Sem alteração) ---
+// --- DestruirJogador 
 void DestruirJogador(Jogador* j)
 {
     UnloadTexture(j->texParado);

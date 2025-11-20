@@ -20,7 +20,8 @@ typedef struct Bomba
     int raioExplosao; // Este valor agora será dinâmico        
     bool ativa;               
     int currentFrame;         
-    float frameTimer;         
+    float frameTimer;
+    struct Jogador *dono;
     
 } Bomba;
 
@@ -33,9 +34,7 @@ typedef struct {
 
 NodeBombas CriarNodeBombas(void); 
 
-// --- ATUALIZADO: Agora aceita o 'range' do jogador ---
-void PlantarBomba(NodeBombas *g, Vector2 posBomba, int range);
-// --- FIM DA ATUALIZAÇÃO ---
+void PlantarBomba(NodeBombas *g, Vector2 posBomba, int range, Jogador *dono);
 
 bool AtualizarBombas(NodeBombas *g, float deltaTime, NodeExplosoes *gExplosoes, struct Jogador* jogadores[], int numJogadores);
 
