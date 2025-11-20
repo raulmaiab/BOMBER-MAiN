@@ -11,29 +11,24 @@ static Texture2D texLimit;
 
 static ExtraItem extras[MAX_EXTRAS]; 
 static int quantidadeExtras = 0;
-
-// --- NOVO: Variável de Controle ---
-static bool extrasPermitidos = true; // Padrão ligado
+static bool extrasPermitidos = true; 
 
 void SetExtrasHabilitados(bool habilitado) {
     extrasPermitidos = habilitado;
 }
-// ----------------------------------
 
-void ResetarExtras(void)
-{
+void ResetarExtras(void) {
     for (int i = 0; i < MAX_EXTRAS; i++) {
         extras[i].ativo = false;
     }
     quantidadeExtras = 0; 
 }
 
-void InicializarExtras(void)
-{
+void InicializarExtras(void) {
     texRange = LoadTexture("extras/range.png");
     texDefense = LoadTexture("extras/defense.png");
     texSpeed = LoadTexture("extras/speed.png");
-    texLimit = LoadTexture("extras/plus.png");
+    texLimit = LoadTexture("extras/plus.png"); // <--- Sua imagem de +1 Bomba
 
     if (texRange.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar extras/range.png");
     if (texDefense.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar extras/defense.png");
@@ -41,25 +36,20 @@ void InicializarExtras(void)
     if (texLimit.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar extras/plus.png");
 
     ResetarExtras();
-    extrasPermitidos = true; // Reseta para true por segurança
+    extrasPermitidos = true; 
 }
 
-void DescarregarExtras(void)
-{
+void DescarregarExtras(void) {
     UnloadTexture(texRange);
     UnloadTexture(texDefense);
     UnloadTexture(texSpeed);
     UnloadTexture(texLimit);
 }
 
-void SpawnarExtra(Vector2 pos)
-{
+void SpawnarExtra(Vector2 pos) {
     if (!extrasPermitidos) return; 
-    // ----------------------------------------
 
-    // Chance de 30% de spawnar um extra
     if (GetRandomValue(0, 99) >= 30) return; 
-
     if (quantidadeExtras >= MAX_EXTRAS) return;
 
     int slot = -1;
@@ -69,38 +59,33 @@ void SpawnarExtra(Vector2 pos)
             break;
         }
     }
-
     if (slot == -1) return; 
 
     extras[slot].pos = pos;
     extras[slot].ativo = true;
+    
+    // AGORA FUNCIONA: Sorteia de 0 a 3 (inclui BOMB_LIMIT)
     extras[slot].type = GetRandomValue(0, EXTRA_MAX - 1); 
+    
     quantidadeExtras++; 
 }
 
-bool GetExtraMaisProximo(Vector2 posJogador, float raioBusca, Vector2* posOut)
-{
-    // Se extras estiverem desligados, o bot não deve achar nada
+bool GetExtraMaisProximo(Vector2 posJogador, float raioBusca, Vector2* posOut) {
     if (!extrasPermitidos) return false;
-
     int melhorIndice = -1;
     float menorDistancia = raioBusca; 
-
     Vector2 centerJ = { posJogador.x + TILE_SIZE/2.0f, posJogador.y + TILE_SIZE/2.0f };
 
-    for (int i = 0; i < MAX_EXTRAS; i++) 
-    {
+    for (int i = 0; i < MAX_EXTRAS; i++) {
         if (extras[i].ativo) {
             Vector2 centerE = { extras[i].pos.x + TILE_SIZE/2.0f, extras[i].pos.y + TILE_SIZE/2.0f };
             float dist = Vector2Distance(centerJ, centerE);
-            
             if (dist < menorDistancia) {
                 menorDistancia = dist;
                 melhorIndice = i;
             }
         }
     }
-
     if (melhorIndice != -1) {
         *posOut = extras[melhorIndice].pos;
         return true;
@@ -108,10 +93,9 @@ bool GetExtraMaisProximo(Vector2 posJogador, float raioBusca, Vector2* posOut)
     return false;
 }
 
-void VerificarColetaExtras(Jogador* j)
-{
+void VerificarColetaExtras(Jogador* j) {
     if (!j || !j->vivo) return;
-    if (!extrasPermitidos) return; // Otimização
+    if (!extrasPermitidos) return;
 
     Vector2 playerCenter = { j->pos.x + TILE_SIZE / 2.0f, j->pos.y + TILE_SIZE / 2.0f };
 
@@ -125,6 +109,7 @@ void VerificarColetaExtras(Jogador* j)
             switch (extras[i].type) {
                 case EXTRA_RANGE:
                     j->bombRange++; 
+                    TraceLog(LOG_INFO, "Jogador pegou Range. Novo: %d", j->bombRange);
                     break;
                 case EXTRA_DEFENSE:
                     j->temDefesa = true;
@@ -134,22 +119,21 @@ void VerificarColetaExtras(Jogador* j)
                     j->temVelocidade = true;
                     j->timerVelocidade = 10.0f; 
                     break;
-                case EXTRA_MAX:
+                // --- CORREÇÃO: Usar o tipo correto ---
+                case EXTRA_BOMB_LIMIT:
                     j->bombLimit++;
-                default:
+                    TraceLog(LOG_INFO, "Jogador pegou Bomba Extra. Limite agora: %d", j->bombLimit);
                     break;
+                default: break;
             }
-            
             extras[i].ativo = false; 
             quantidadeExtras--;      
         }
     }
 }
 
-void DesenharExtras(void)
-{
-    if (!extrasPermitidos) return; // Não desenha nada se estiver desligado
-
+void DesenharExtras(void) {
+    if (!extrasPermitidos) return; 
     Vector2 origin = { 0, 0 };
     for (int i = 0; i < MAX_EXTRAS; i++) {
         if (!extras[i].ativo) continue;
@@ -158,10 +142,10 @@ void DesenharExtras(void)
         Color c = WHITE;     
 
         switch (extras[i].type) {
-            case EXTRA_RANGE:    t = &texRange; c = RED; break;
-            case EXTRA_DEFENSE:  t = &texDefense; c = BLUE; break;
-            case EXTRA_SPEED:    t = &texSpeed; c = GREEN; break;
-            case EXTRA_MAX:      t = &texLimit; c = YELLOW; break;
+            case EXTRA_RANGE:      t = &texRange; c = RED; break;
+            case EXTRA_DEFENSE:    t = &texDefense; c = BLUE; break;
+            case EXTRA_SPEED:      t = &texSpeed; c = GREEN; break;
+            case EXTRA_BOMB_LIMIT: t = &texLimit; c = YELLOW; break; // Amarelo
             default: break;
         }
 

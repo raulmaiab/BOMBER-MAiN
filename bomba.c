@@ -2,7 +2,8 @@
 #include "raylib.h"
 #include "mapa.h"       
 #include "explosao.h"   
-#include "jogador.h"    
+#include "jogador.h"    // Necessário para acessar a struct Jogador completa
+#include <stddef.h>     // Necessário para NULL
 
 #define BOMBA_BLINK_SPEED 0.2f 
 #define BOMBA_BLINK_START_TIME 1.0f 
@@ -23,7 +24,8 @@ NodeBombas CriarNodeBombas(void) {
     return g;
 }
 
-void PlantarBomba(NodeBombas *g, Vector2 posBomba, int range, Jogador dono) 
+// Função corrigida para aceitar ponteiro para Jogador
+void PlantarBomba(NodeBombas *g, Vector2 posBomba, int range, Jogador *dono) 
 {
     if (g->quantidade >= MAX_BOMBAS_ATIVAS) return;
     
@@ -40,7 +42,13 @@ void PlantarBomba(NodeBombas *g, Vector2 posBomba, int range, Jogador dono)
     b->ativa = true;           
     b->currentFrame = 0; 
     b->frameTimer = 0.0f;
-    b->dono = dono;
+    b->dono = dono; // Atribui o dono corretamente
+    
+    // Incrementa contador de bombas do jogador
+    if (dono) {
+        dono->bombasAtivas++;
+    }
+
     g->quantidade++;
 }
 
@@ -66,7 +74,6 @@ bool AtualizarBombas(NodeBombas *g, float deltaTime, NodeExplosoes *gExplosoes, 
 
         if (b->tempoExplosao <= 0) {
             
-            // chama explosao.c para processar explosão 
             CriarExplosao(gExplosoes, b->posicao, b->raioExplosao, jogadores, numJogadores);
             
             if (b->dono) 
@@ -77,8 +84,9 @@ bool AtualizarBombas(NodeBombas *g, float deltaTime, NodeExplosoes *gExplosoes, 
 
             algumaExplodiu = true;
             b->ativa = false; 
-            
-            // remove bomba do array (substitui pelo último)
+            b->dono = NULL; // Limpa o dono
+
+            // Remove a bomba da lista
             g->bombas[i] = g->bombas[g->quantidade - 1];
             g->bombas[g->quantidade - 1].ativa = false; 
             g->bombas[g->quantidade - 1].dono = NULL;
@@ -89,7 +97,6 @@ bool AtualizarBombas(NodeBombas *g, float deltaTime, NodeExplosoes *gExplosoes, 
     return algumaExplodiu;
 }
 
-// DesenharBombas 
 void DesenharBombas(const NodeBombas *g) {
     Vector2 origin = { 0, 0 };
     for (int i = 0; i < g->quantidade; i++) {
@@ -99,9 +106,8 @@ void DesenharBombas(const NodeBombas *g) {
         Texture2D texToDraw = (b->currentFrame == 0) ? g->texNormal : g->texAviso;
         
         if (texToDraw.id > 0) {
-             // CORREÇÃO DE TAMANHO (GIGANTE -> NORMAL)
              Rectangle sourceRec = { 0.0f, 0.0f, (float)texToDraw.width, (float)texToDraw.height };
-             Rectangle destRec = { b->posicao.x, b->posicao.y, TILE_SIZE, TILE_SIZE }; // Força TILE_SIZE
+             Rectangle destRec = { b->posicao.x, b->posicao.y, TILE_SIZE, TILE_SIZE };
              
              DrawTexturePro(texToDraw, sourceRec, destRec, origin, 0.0f, WHITE);
         } else {
@@ -110,7 +116,6 @@ void DesenharBombas(const NodeBombas *g) {
     }
 }
 
-// UnloadBombas 
 void UnloadBombas(NodeBombas *g) {
     UnloadTexture(g->texNormal);
     UnloadTexture(g->texAviso);

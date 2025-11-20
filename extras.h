@@ -5,10 +5,11 @@
 #include "jogador.h" 
 
 typedef enum {
-    EXTRA_RANGE,    // 0
-    EXTRA_DEFENSE,  // 1
-    EXTRA_SPEED,    // 2
-    EXTRA_MAX       // 3
+    EXTRA_RANGE,      // 0
+    EXTRA_DEFENSE,    // 1
+    EXTRA_SPEED,      // 2
+    EXTRA_BOMB_LIMIT, // 3 <--- O NOVO TIPO TEM QUE ESTAR AQUI
+    EXTRA_MAX         // 4 (Total para o Random)
 } ExtraType;
 
 typedef struct {
@@ -20,11 +21,7 @@ typedef struct {
 #define MAX_EXTRAS 20 
 
 void InicializarExtras(void);
-
-// --- NOVO: Configura se os extras podem spawnar ---
 void SetExtrasHabilitados(bool habilitado);
-// --------------------------------------------------
-
 void SpawnarExtra(Vector2 pixelPos); 
 void DesenharExtras(void);
 void VerificarColetaExtras(Jogador* j); 

@@ -12,25 +12,22 @@
 #define COLLISION_MARGIN 4.0f 
 #define BOMBA_COOLDOWN_TEMPO 2.5f 
 
-// --- Funções Ajudantes (Sem alteração) ---
-// ... (SnapToGrid, AlinharEPlantarBomba, IsBombAt, IsInCorner, IsDirectionSafe, IsDirectionWalkable, MoverJogadorX, MoverJogadorY) ...
+// --- Funções Ajudantes ---
 
-// Funções Ajudantes
 static void SnapToGrid(Jogador* j, int direction) {
     Vector2 center = { j->pos.x + TILE_SIZE/2.0f, j->pos.y + TILE_SIZE/2.0f };
     Vector2 gridPos = GetGridPosFromPixels(center);
     
-    if (direction == 0 || direction == 1) { 
+    if (direction == 0 || direction == 1) { // Vertical -> Alinha X
         j->pos.x = gridPos.x * TILE_SIZE;
     }
-    else if (direction == 2 || direction == 3) { 
+    else if (direction == 2 || direction == 3) { // Horizontal -> Alinha Y
         j->pos.y = gridPos.y * TILE_SIZE;
     }
 }
 
 static void AlinharEPlantarBomba(Jogador* j, NodeBombas *gBombas) {
-
-    // checa limite do jogador antes de tentar plantar
+    // Verifica limite de bombas do jogador
     if (j->bombasAtivas >= j->bombLimit) return;
 
     float centerX = j->pos.x + (TILE_SIZE / 2.0f);
@@ -38,9 +35,9 @@ static void AlinharEPlantarBomba(Jogador* j, NodeBombas *gBombas) {
     int gridX = (int)(centerX / TILE_SIZE);
     int gridY = (int)(centerY / TILE_SIZE);
     Vector2 posBombaAlinhada = { (float)gridX * TILE_SIZE, (float)gridY * TILE_SIZE };
-    PlantarBomba(gBombas, posBombaAlinhada, j->bombRange, j); 
-
     
+    // Passa o próprio jogador 'j' como dono
+    PlantarBomba(gBombas, posBombaAlinhada, j->bombRange, j); 
 }
 
 static bool IsBombAt(NodeBombas *gBombas, int gridX, int gridY) {
@@ -62,6 +59,7 @@ static bool IsInCorner(int x, int y) {
     return false;
 }
 
+// Verifica se é seguro (SEM BOMBA, SEM PAREDE) - Usado no Wandering
 static bool IsDirectionSafe(int startX, int startY, int dir, NodeBombas *gBombas) {
     int dx = 0, dy = 0;
     if (dir == 0) dy = -1; else if (dir == 1) dy = 1; else if (dir == 2) dx = -1; else if (dir == 3) dx = 1;  
@@ -73,12 +71,14 @@ static bool IsDirectionSafe(int startX, int startY, int dir, NodeBombas *gBombas
     return true;
 }
 
+// Verifica APENAS se é chão (IGNORA BOMBAS) - Usado no Fleeing/Panic
 static bool IsDirectionWalkable(int startX, int startY, int dir) {
     int dx = 0, dy = 0;
     if (dir == 0) dy = -1; else if (dir == 1) dy = 1; else if (dir == 2) dx = -1; else if (dir == 3) dx = 1;  
     int checkX = startX + dx;
     int checkY = startY + dy;
     if (checkX < 0 || checkX >= MAP_GRID_WIDTH || checkY < 0 || checkY >= MAP_GRID_HEIGHT) return false;
+    // Só importa se é parede ou bloco. Bomba é "andável" na fuga (graças ao ignoreBombs).
     if (GetTileTipo(checkX, checkY) != TILE_EMPTY) return false; 
     return true;
 }
@@ -135,11 +135,9 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
     Jogador j;
     j.pos = posInicial; j.velocidade = 2.5f; j.vivo = true;
     
-    // Adicionar o nome do sprite/cor
-    strncpy(j.spriteName, pastaSprites, MAX_SPRITE_NAME_LENGTH - 1); // <<< PREENCHIMENTO DO CAMPO
+    strncpy(j.spriteName, pastaSprites, MAX_SPRITE_NAME_LENGTH - 1); 
     j.spriteName[MAX_SPRITE_NAME_LENGTH - 1] = '\0';
     
-    //--- Design e Movimentacao
     char pathBuffer[256]; 
     sprintf(pathBuffer, "%s/andando.png", pastaSprites); j.texParado = LoadTexture(pathBuffer);
     sprintf(pathBuffer, "%s/costas1.png", pastaSprites); j.texCima[0] = LoadTexture(pathBuffer);
@@ -154,7 +152,6 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
     sprintf(pathBuffer, "%s/direita3.png", pastaSprites); j.texDireita[2] = LoadTexture(pathBuffer);
     j.currentFrame = 0; j.frameTimer = 0.0f; j.currentDir = DIR_BAIXO; 
     
-    //--- Mecanica dos BOTs
     j.ehBot = ehBot;
     if (j.ehBot) {
         j.botState = BOT_STATE_WANDERING; 
@@ -168,7 +165,6 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
     j.botLastBombPos = (Vector2){0,0};
     j.bombaCooldown = 0.0f; 
 
-    //--- Controle dos extras
     j.bombRange = 1;
     j.temDefesa = false; j.timerDefesa = 0.0f;
     j.temVelocidade = false; j.timerVelocidade = 0.0f;
@@ -178,7 +174,7 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
     return j;
 }
 
-// --- AtualizarJogador 
+// --- AtualizarJogador ---
 void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRight, int keyBomb, 
                       NodeBombas *gBombas, float deltaTime, 
                       Jogador* targetHuman1, Jogador* targetHuman2)
@@ -222,6 +218,7 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
                     if (!IsInCorner(gridX, gridY))
                     {
                         bool triggerAcionado = false;
+                        // Trigger: Apenas WALLB
                         if (GetTileTipo(gridX, gridY - 1) == TILE_DESTRUCTIBLE || 
                             GetTileTipo(gridX, gridY + 1) == TILE_DESTRUCTIBLE ||
                             GetTileTipo(gridX - 1, gridY) == TILE_DESTRUCTIBLE || 
@@ -238,7 +235,7 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
                             else if (j->botMoveDirecao == 2) oposto = 3; 
                             else if (j->botMoveDirecao == 3) oposto = 2; 
 
-                            // Usa IsDirectionSafe (sem  bomba) para PLANEJAR
+                            // Usa IsDirectionSafe para PLANEJAR (considera bombas)
                             if (oposto != -1 && IsDirectionSafe(gridX, gridY, oposto, gBombas)) {
                                 escapeDir = oposto;
                             }
@@ -323,7 +320,7 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
                 break; 
             }
             
-            // --- FLEEING (Fuga com Correção de Travamento) ---
+            // --- FLEEING (Fuga com Imunidade a Bombas e Correção) ---
             case BOT_STATE_FLEEING:
             {
                 Vector2 myGridPos = GetGridPosFromPixels(j->pos);
@@ -340,32 +337,39 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
                 // Anti-stuck PÂNICO
                 else if (!acabouDePlantar && Vector2Distance(posAntes, j->pos) < 0.05f) 
                 {
-                    // Se travou no meio da fuga, usa IsDirectionWalkable (IGNORA BOMBAS)
-                    
-                    int gx = (int)myGridPos.x;
-                    int gy = (int)myGridPos.y;
-                    int novaDir = -1;
-                    
-                    // Tenta direção perpendicular primeiro
-                    if (j->botMoveDirecao <= 1) { // Vertical
-                        if (IsDirectionWalkable(gx, gy, 2)) novaDir = 2;
-                        else if (IsDirectionWalkable(gx, gy, 3)) novaDir = 3;
-                    } else { // Horizontal
-                        if (IsDirectionWalkable(gx, gy, 0)) novaDir = 0;
-                        else if (IsDirectionWalkable(gx, gy, 1)) novaDir = 1;
-                    }
-                    
-                    // Se não achou perpendicular, tenta qualquer uma que não seja voltar
-                    if (novaDir == -1) {
-                        if (IsDirectionWalkable(gx, gy, 0) && j->botMoveDirecao != 1) novaDir = 0;
-                        else if (IsDirectionWalkable(gx, gy, 1) && j->botMoveDirecao != 0) novaDir = 1;
-                        else if (IsDirectionWalkable(gx, gy, 2) && j->botMoveDirecao != 3) novaDir = 2;
-                        else if (IsDirectionWalkable(gx, gy, 3) && j->botMoveDirecao != 2) novaDir = 3;
-                    }
+                    if (currentDist >= 1) {
+                        j->botState = BOT_STATE_HOLDING;
+                        j->botStateTimer = BOMBA_COOLDOWN_TEMPO - 0.5f;
+                        j->botMoveDirecao = 4; 
+                    } else {
+                        // Se travou no meio da fuga, usa IsDirectionWalkable (IGNORA BOMBAS)
+                        // para encontrar QUALQUER saída.
+                        
+                        int gx = (int)myGridPos.x;
+                        int gy = (int)myGridPos.y;
+                        int novaDir = -1;
+                        
+                        // Tenta direção perpendicular primeiro
+                        if (j->botMoveDirecao <= 1) { // Vertical
+                            if (IsDirectionWalkable(gx, gy, 2)) novaDir = 2;
+                            else if (IsDirectionWalkable(gx, gy, 3)) novaDir = 3;
+                        } else { // Horizontal
+                            if (IsDirectionWalkable(gx, gy, 0)) novaDir = 0;
+                            else if (IsDirectionWalkable(gx, gy, 1)) novaDir = 1;
+                        }
+                        
+                        // Se não achou perpendicular, tenta qualquer uma
+                        if (novaDir == -1) {
+                            if (IsDirectionWalkable(gx, gy, 0) && j->botMoveDirecao != 1) novaDir = 0;
+                            else if (IsDirectionWalkable(gx, gy, 1) && j->botMoveDirecao != 0) novaDir = 1;
+                            else if (IsDirectionWalkable(gx, gy, 2) && j->botMoveDirecao != 3) novaDir = 2;
+                            else if (IsDirectionWalkable(gx, gy, 3) && j->botMoveDirecao != 2) novaDir = 3;
+                        }
 
-                    if (novaDir != -1) {
-                        j->botMoveDirecao = novaDir;
-                        SnapToGrid(j, novaDir);
+                        if (novaDir != -1) {
+                            j->botMoveDirecao = novaDir;
+                            SnapToGrid(j, novaDir);
+                        }
                     }
                 }
                 break;
@@ -385,6 +389,7 @@ void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRi
         }
 
         // --- CONFIGURAÇÃO DE MOVIMENTO ---
+        // Em FLEEING, o bot ignora colisão com bombas para não travar na própria bomba ou em bombas próximas
         bool ignoreBombs = (j->botState == BOT_STATE_FLEEING);
 
         j->currentDir = DIR_PARADO; 
