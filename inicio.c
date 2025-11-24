@@ -3,175 +3,115 @@
 #include <stdbool.h>
 #include <math.h>
 #include <stddef.h>
+#include <string.h>
 
 
-#define TITLE_TEXT      "BomberMAIN"
-#define SUBTEXT_TEXT    "Press ENTER"
-#define BG_IMAGE_PATH   "inicio.png"     
-#define FONT_PATH       "assets/font.ttf"
+#define TEXTO_TITULO        "BomberMAIN"
+#define TEXTO_SUBTITULO     "Pressione ENTER"
+#define CAMINHO_IMAGEM_FUNDO "inicio.png"     
+#define CAMINHO_FONTE       "assets/font.ttf"
 
-
-
-
-static void LinhasNeonFundo(int largura, int altura) {
-  for (int coord_vertical = 0; coord_vertical < altura; coord_vertical++) {
-      float progresso = (float)coord_vertical / (float)altura;
-      Color cor = {
-          (unsigned char)(6 + (int)(12  * progresso)),
-          (unsigned char)(10 + (int)(16 * progresso)),
-          (unsigned char)(18 + (int)(24 * progresso)),
+// Desenhando a tela de início
+static void LinhasNeonFundo(int largura_tela, int altura_tela) {
+  for (int coordenada_vertical = 0; coordenada_vertical < altura_tela; coordenada_vertical++) {
+      float progresso_vertical = (float)coordenada_vertical / (float)altura_tela;
+      Color cor_gradiente = {
+          (unsigned char)(6 + (int)(12  * progresso_vertical)),
+          (unsigned char)(10 + (int)(16 * progresso_vertical)),
+          (unsigned char)(18 + (int)(24 * progresso_vertical)),
           255
       };
-      DrawLine(0, coord_vertical, largura, coord_vertical, cor);
+      DrawLine(0, coordenada_vertical, largura_tela, coordenada_vertical, cor_gradiente);
   }
 
-
-
-
-  Color linhasciano = (Color){ 0, 200, 255, 40 };
-  for (int linha = 0; linha < 28; linha++) {
-      int coord_horizontal = (linha * 53) % largura;
-      DrawRectangle(coord_horizontal, 0, 2, altura, linhasciano);
+  // Linhas verticais ciano (efeito de grade)
+  Color cor_linhas_ciano = (Color){ 0, 200, 255, 40 };
+  for (int indice_linha = 0; indice_linha < 28; indice_linha++) {
+      int coordenada_horizontal = (indice_linha * 53) % largura_tela;
+      DrawRectangle(coordenada_horizontal, 0, 2, altura_tela, cor_linhas_ciano);
   }
 }
 
-
-
-
-static void DrawTextGlow(Font fonte, const char* frase, Vector2 posicao_inicial, float size, float spacing, Color base, Color glow) {
-  const int o = 2;
-  DrawTextEx(fonte, frase, (Vector2){ posicao_inicial.x - o, posicao_inicial.y }, size, spacing, glow);
-  DrawTextEx(fonte, frase, (Vector2){ posicao_inicial.x + o, posicao_inicial.y }, size, spacing, glow);
-  DrawTextEx(fonte, frase, (Vector2){ posicao_inicial.x, posicao_inicial.y - o }, size, spacing, glow);
-  DrawTextEx(fonte, frase, (Vector2){ posicao_inicial.x, posicao_inicial.y + o }, size, spacing, glow);
-  DrawTextEx(fonte, frase, posicao_inicial, size, spacing, base);
+static void DesenharTextoBrilhante(Font fonte, const char* frase, Vector2 posicao_inicial, float tamanho_fonte, float espacamento, Color cor_base, Color cor_brilho) {
+  const int deslocamento_brilho = 2;
+  
+  // Desenha o brilho (sombra)
+  DrawTextEx(fonte, frase, (Vector2){ posicao_inicial.x - deslocamento_brilho, posicao_inicial.y }, tamanho_fonte, espacamento, cor_brilho);
+  DrawTextEx(fonte, frase, (Vector2){ posicao_inicial.x + deslocamento_brilho, posicao_inicial.y }, tamanho_fonte, espacamento, cor_brilho);
+  DrawTextEx(fonte, frase, (Vector2){ posicao_inicial.x, posicao_inicial.y - deslocamento_brilho }, tamanho_fonte, espacamento, cor_brilho);
+  DrawTextEx(fonte, frase, (Vector2){ posicao_inicial.x, posicao_inicial.y + deslocamento_brilho }, tamanho_fonte, espacamento, cor_brilho);
+  
+  // Desenha o texto principal por cima
+  DrawTextEx(fonte, frase, posicao_inicial, tamanho_fonte, espacamento, cor_base);
 }
 
-
-
+// def principal
 
 bool ExecutarTelaInicio(void) {
 
+  // tenta carregar imagem de fundo
+  Texture2D textura_fundo = {0};
 
-  Texture2D bg = {0};
-  bool hasBg = false;
-  if (FileExists(BG_IMAGE_PATH)) {
-      bg = LoadTexture(BG_IMAGE_PATH);
-      hasBg = (bg.id != 0);
-  }
+  // Carregando a fonte
+  Font fonte_principal = GetFontDefault();
 
-
-
-
-  Font font = GetFontDefault();
-  bool hasFont = false;
-  if (FileExists(FONT_PATH)) {
-      font = LoadFontEx(FONT_PATH, 64, NULL, 0);
-      if (font.baseSize > 0) {
-          hasFont = true;
-      }
-  }
-
-
-
-
-  bool startGame = false;
+  // Loop da tela de início
+  bool iniciar_jogo = false;
   while (WindowShouldClose() == 0)
   {
-      if (IsKeyPressed(KEY_F11)) {
-          ToggleFullscreen();
-      }
+      
       if (IsKeyPressed(KEY_ESCAPE)) {
-          startGame = false; break;
+          iniciar_jogo = false; 
+          break;
       }
+      
       if (IsKeyReleased(KEY_ENTER)) {
-          startGame = true;  break;
+          iniciar_jogo = true;  
+          break;
       }
+      
       const int largura_tela = GetScreenWidth();
       const int altura_tela = GetScreenHeight();
-
-
 
 
       BeginDrawing();
       {
           ClearBackground(BLACK);
+          LinhasNeonFundo(largura_tela, altura_tela);
+        
+          const float tamanho_titulo = 92.0f;
+          const float tamanho_subtitulo = 36.0f;
+          const float espacamento_texto = 2.0f;
 
+          //Medir o texto
+          Vector2 tamanho_titulo_encontrado = MeasureTextEx(fonte_principal, TEXTO_TITULO, tamanho_titulo, espacamento_texto);
+          Vector2 tamanho_subtitulo_encontrado = MeasureTextEx(fonte_principal, TEXTO_SUBTITULO, tamanho_subtitulo, espacamento_texto);
 
+          //Calcular a posição central
+          Vector2 posicao_titulo = { (largura_tela - tamanho_titulo_encontrado.x)/2.0f, altura_tela*0.20f };
+          Vector2 posicao_subtitulo = { (largura_tela - tamanho_subtitulo_encontrado.x)/2.0f, altura_tela*0.60f };
 
-
-          if (hasBg) {
-              float scale = fminf((float)largura_tela / bg.width, (float)altura_tela / bg.height);
-              int w = (int)(bg.width * scale);
-              int h = (int)(bg.height * scale);
-              int x = (largura_tela - w)/2;
-              int y = (altura_tela - h)/2;
-              DrawTexturePro(
-                  bg,
-                  (Rectangle){ 0, 0, (float)bg.width, (float)bg.height },
-                  (Rectangle){ (float)x, (float)y, (float)w, (float)h },
-                  (Vector2){ 0, 0 }, 0.0f, WHITE
-              );
-              DrawRectangleGradientV(0, 0, largura_tela, altura_tela, (Color){0,0,0,60}, (Color){0,0,0,140});
-          } else {
-              LinhasNeonFundo(largura_tela, altura_tela);
-          }
-
-
-
-
-          const float titleSize = 92.0f;
-          const float subSize   = 36.0f;
-          const float spacing   = 2.0f;
-
-
-
-
-          Vector2 tSize = MeasureTextEx(font, TITLE_TEXT, titleSize, spacing);
-          Vector2 sSize = MeasureTextEx(font, SUBTEXT_TEXT, subSize, spacing);
-
-
-
-
-          Vector2 tPos = { (largura_tela - tSize.x)/2.0f, altura_tela*0.20f };
-          Vector2 sPos = { (largura_tela - sSize.x)/2.0f, altura_tela*0.60f };
-
-
-
-
-          DrawTextGlow(font, TITLE_TEXT, tPos, titleSize, spacing,
+          //Desenha o TÍTULO
+          DesenharTextoBrilhante(fonte_principal, TEXTO_TITULO, posicao_titulo, tamanho_titulo, espacamento_texto,
                        (Color){150,240,255,255}, (Color){ 20,140,180,120 });
 
-
-
-
-          double blink = fmod(GetTime(), 0.8);
-          if (blink < 0.4) {
-              DrawTextGlow(font, SUBTEXT_TEXT, sPos, subSize, spacing,
+          // Lógica do efeito de piscar
+          double tempo_piscando = fmod(GetTime(), 0.8);
+          if (tempo_piscando < 0.4) {
+              // Desenha o SUBTÍTULO
+              DesenharTextoBrilhante(fonte_principal, TEXTO_SUBTITULO, posicao_subtitulo, tamanho_subtitulo, espacamento_texto,
                            (Color){140,230,255,255}, (Color){ 10,120,200,110 });
           }
 
-
-
-
-          const char* hint = "[ESC] Quit   |   [F11] Fullscreen";
-          Vector2 hSize = MeasureTextEx(font, hint, 18.0f, 1.0f);
-          DrawTextEx(font, hint, (Vector2){ largura_tela - hSize.x - 12, altura_tela - hSize.y - 8 }, 18.0f, 1.0f, (Color){ 200, 220, 235, 200 });
+          // Desenha a dica de teclas
+          const char* dica_teclas = "[ESC] Sair";
+          Vector2 tamanho_dica = MeasureTextEx(fonte_principal, dica_teclas, 18.0f, 1.0f);
+          DrawTextEx(fonte_principal, dica_teclas, (Vector2){ largura_tela - tamanho_dica.x - 12, altura_tela - tamanho_dica.y - 8 }, 18.0f, 1.0f, (Color){ 200, 220, 235, 200 });
       }
       EndDrawing();
   }
 
 
-
-
-  if (hasBg) {
-      UnloadTexture(bg);
-  }
-  if (hasFont){
-      UnloadFont(font);
-  }
-
-
-  return startGame && WindowShouldClose() == 0;
+  // Retorna true se iniciou o jogo E a janela NÃO foi fechada (== 0)
+  return iniciar_jogo && WindowShouldClose() == 0;
 }
-
