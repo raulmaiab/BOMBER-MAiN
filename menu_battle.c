@@ -1,76 +1,97 @@
 #include "raylib.h"
 #include "menu_battle.h"
-#include "menu.h" 
+#include "menu.h"
 #include <stdbool.h>
 #include <math.h> 
 #include <stdio.h> 
 
-// --- Variáveis Globais (Efeitos) ---
-static RainDrop rain[MAX_RAIN_DROPS];
-static Pulse pulses[MAX_PULSES];
-static bool effectsInitialized = false;
+//Variáveis das animações
+static RainDrop gotas_chuva[MAX_GOTAS_CHUVA];
+static Pulse pulsos_circulares[MAX_PULSOS_CIRCULARES];
+static bool efeitos_inicializados = false;
 
-// --- Forward Declarations ---
-static void InitMenuEffects(void);
-static void UpdateMenuEffects(void);
-static void DrawMenuEffects(void);
-static void DrawTextGlow(const char* text, Vector2 pos, float size, Color base, Color glow);
+//Funções de efeito
+static void InicializarEfeitosMenu(void);
+static void AtualizarEfeitosMenu(void);
+static void DesenharEfeitosMenu(void);
+static void DesenharTextoBrilhante(const char* texto, Vector2 posicao, float tamanho, Color cor_base, Color cor_brilho);
 
-// --- Função Principal ---
-bool ExecutarMenuBattle(BattleSettings *settings)
+//Def principal
+bool ExecutarMenuBattle(BattleSettings *configuracoes)
 {
-    if (!effectsInitialized) {
-        InitMenuEffects();
+    if (efeitos_inicializados == false) {
+        InicializarEfeitosMenu();
     }
 
-    // Variáveis de Estado
-    static int currentOption = 0; 
-    static int numPlayers = 1;
-    static bool extras = false;
-    static int mapIndex = 0;
+    //variaveis do menu
+    static int opcao_atual = 0; 
+    static int numero_jogadores = 1;
+    static bool extras_habilitados = false;
+    static int indice_mapa = 0;
     
-    // Reseta cursor ao entrar
-    currentOption = 0; 
+    //Reseta mouse ao entrar
+    opcao_atual = 0; 
     
-    // Aumentado para 5 (Players, Extras, Map, START, BACK)
-    const int numOptions = 5; 
+    //Opções: Jogadores, Extras, Mapa, start, back
+    const int numero_opcoes = 5; 
 
-    while (!WindowShouldClose())
+    while (WindowShouldClose() == 0)
     {
-        // 1. ATUALIZAR (Input)
+        //atualizar ação
         
         if (IsKeyPressed(KEY_DOWN)) {
-            currentOption = (currentOption + 1) % numOptions; 
+            opcao_atual = (opcao_atual + 1) % numero_opcoes; 
         }
+        
         if (IsKeyPressed(KEY_UP)) {
-            currentOption = (currentOption - 1 + numOptions) % numOptions;
+            opcao_atual = (opcao_atual - 1 + numero_opcoes) % numero_opcoes;
         }
 
         if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT)) {
-            bool isRight = IsKeyPressed(KEY_RIGHT);
+            bool pressionou_direita = IsKeyPressed(KEY_RIGHT);
             
-            switch (currentOption)
+            switch (opcao_atual)
             {
-                case 0: numPlayers = (numPlayers == 1) ? 2 : 1; break;
-                case 1: extras = !extras; break;
-                case 2: 
-                    if (isRight) mapIndex = (mapIndex + 1) % 3;
-                    else mapIndex = (mapIndex - 1 + 3) % 3;
+                case 0: //Nº de jogadores
+                {
+                    if (numero_jogadores == 1) {
+                        numero_jogadores = 2;
+                    } else {
+                        numero_jogadores = 1;
+                    }
                     break;
-                // Case 3 (Start) e 4 (Back) não têm ação lateral
+                }
+                case 1: //Power ups
+                {
+                    if (extras_habilitados == true) {
+                        extras_habilitados = false;
+                    } else {
+                        extras_habilitados = true;
+                    }
+                    break;
+                }
+                case 2: //Mapas
+                {
+                    if (pressionou_direita) {
+                        indice_mapa = (indice_mapa + 1) % 3;
+                    } else {
+                        indice_mapa = (indice_mapa - 1 + 3) % 3;
+                    }
+                    break;
+                }
             }
         }
         
-        // Confirmação
+        //Confirmação (enter)
         if (IsKeyReleased(KEY_ENTER)) { 
-            if (currentOption == 3) { // START
-                settings->numPlayers = numPlayers;
-                settings->extras = extras;
-                settings->mapIndex = mapIndex;
-                return true; // Inicia o jogo
+            if (opcao_atual == 3) { //start
+                configuracoes->numero_jogadores = numero_jogadores;
+                configuracoes->extras_habilitados = extras_habilitados;
+                configuracoes->indice_mapa = indice_mapa;
+                return true; //Inicia o jogo
             }
-            if (currentOption == 4) { // BACK
-                return false; // Volta ao menu principal
+            if (opcao_atual == 4) { //back
+                return false; //Volta ao menu principal
             }
         }
         
@@ -78,147 +99,193 @@ bool ExecutarMenuBattle(BattleSettings *settings)
             return false; 
         }
         
-        UpdateMenuEffects();
+        AtualizarEfeitosMenu();
 
-        // 2. DESENHAR
+        //DESENHAR
         BeginDrawing();
-            int sw = GetScreenWidth();
-            int sh = GetScreenHeight();
+        {
+            int largura_tela = GetScreenWidth();
+            int altura_tela = GetScreenHeight();
             ClearBackground(COLOR_UI_BACKGROUND); 
-            DrawMenuEffects();
+            DesenharEfeitosMenu();
             
-            float titleSize = 70;
-            float titleX = (sw - MeasureText("BATTLE SETUP", titleSize)) / 2;
-            DrawTextGlow("BATTLE SETUP", (Vector2){ titleX, sh * 0.1f }, titleSize, 
-                         RAYWHITE, COLOR_BLUE_HIGHLIGHT);
+            //Título
+            float tamanho_titulo = 70;
+            float posicao_titulo_x = (largura_tela - MeasureText("CONFIGURAR BATALHA", tamanho_titulo)) / 2;
+            DesenharTextoBrilhante("CONFIGURAR BATALHA", (Vector2){ posicao_titulo_x, altura_tela * 0.1f }, tamanho_titulo,RAYWHITE, COLOR_BLUE_HIGHLIGHT);
                          
-            float fontSizeOpcao = 40;
-            float espacamento = 65;
-            float menuY_inicial = sh * 0.35f;
-            float colLabelX = sw * 0.3f; 
-            float colValorX = sw * 0.55f; 
+            //Variáveis do desenho das frases
+            float tamanho_fonte_opcao = 40;
+            float espacamento_vertical = 65;
+            float menu_posicao_y_inicial = altura_tela * 0.35f;
+            float coluna_rotulo_x = largura_tela * 0.3f; 
+            float coluna_valor_x = largura_tela * 0.55f; 
 
-            char pText[4]; sprintf(pText, "%d", numPlayers);
-            const char* eText = (extras) ? "On" : "Off";
+            //Formatação das preferências
+            char texto_jogadores[4]; sprintf(texto_jogadores, "%d", numero_jogadores);
+            const char* texto_extras = (extras_habilitados) ? "Ligado" : "Desligado";
             
-            char mMapText[16];
-            switch(mapIndex) {
-                case 0: sprintf(mMapText, "Default"); break;
-                case 1: sprintf(mMapText, "Cave"); break;
-                case 2: sprintf(mMapText, "Pirate Boat"); break;
+            char texto_mapa[16];
+            switch(indice_mapa) {
+                case 0: 
+                {
+                    sprintf(texto_mapa, "Padrão"); 
+                    break;
+                }
+                case 1:
+                {
+                    sprintf(texto_mapa, "Caverna"); 
+                    break;
+                }
+                case 2:
+                {
+                    sprintf(texto_mapa, "Barco Pirata"); 
+                    break;
+                }
+                default: 
+                {
+                    sprintf(texto_mapa, "Padrão");
+                    break;
+                }
             }
 
-            const char* labels[] = {"Players:", "Extras:", "Map:"};
-            const char* values[] = {pText, eText, mMapText};
+            const char* rotulos[] = {"Jogadores:", "Extras:", "Mapa:"};
+            const char* valores[] = {texto_jogadores, texto_extras, texto_mapa};
             
-            // Desenha as opções configuráveis (0, 1, 2)
-            for (int i = 0; i < 3; i++) 
+            //Desenha as opções configuráveis (0, 1, 2)
+            for (int indice = 0; indice < 3; indice++) 
             {
-                Color base = (i == currentOption) ? COLOR_YELLOW_HIGHLIGHT : COLOR_GRAY_OPTION;
-                Color glow = (i == currentOption) ? (Color){200, 160, 0, 150} : (Color){50,50,50,100};
+                Color cor_base = (indice == opcao_atual) ? COLOR_YELLOW_HIGHLIGHT : COLOR_GRAY_OPTION;
+                Color cor_brilho = (indice == opcao_atual) ? (Color){200, 160, 0, 150} : (Color){50,50,50,100};
                 
-                DrawTextGlow(labels[i], (Vector2){ colLabelX, menuY_inicial + (i * espacamento) }, 
-                             fontSizeOpcao, base, glow);
+                //Desenha o Rótulo
+                DesenharTextoBrilhante(rotulos[indice], (Vector2){ coluna_rotulo_x, menu_posicao_y_inicial + (indice * espacamento_vertical) }, tamanho_fonte_opcao, cor_base, cor_brilho);
                              
-                DrawTextGlow("<", (Vector2){ colValorX - 30, menuY_inicial + (i * espacamento) }, 
-                             fontSizeOpcao, base, glow);
-                DrawTextGlow(values[i], (Vector2){ colValorX, menuY_inicial + (i * espacamento) }, 
-                             fontSizeOpcao, base, glow);
-                DrawTextGlow(">", (Vector2){ colValorX + MeasureText(values[i], fontSizeOpcao) + 30, menuY_inicial + (i * espacamento) }, 
-                             fontSizeOpcao, base, glow);
+                //Desenha a Seta Esquerda (<)
+                DesenharTextoBrilhante("<", (Vector2){ coluna_valor_x - 30, menu_posicao_y_inicial + (indice * espacamento_vertical) }, tamanho_fonte_opcao, cor_base, cor_brilho);
+                
+                //Desenha o VALOR
+                DesenharTextoBrilhante(valores[indice], (Vector2){ coluna_valor_x, menu_posicao_y_inicial + (indice * espacamento_vertical) }, tamanho_fonte_opcao, cor_base, cor_brilho);
+                
+                //Desenha a Seta Direita (>)
+                DesenharTextoBrilhante(">", (Vector2){ coluna_valor_x + MeasureText(valores[indice], tamanho_fonte_opcao) + 30, menu_posicao_y_inicial + (indice * espacamento_vertical) }, tamanho_fonte_opcao, cor_base, cor_brilho);
             }
             
-            // --- Botão START (Índice 3) ---
-            float startY = menuY_inicial + (3 * espacamento) + 20;
-            float startX = (sw - MeasureText("START", fontSizeOpcao)) / 2;
-            if (currentOption == 3) {
-                bool piscar = fmod(GetTime(), 0.2) > 0.1;
-                Color corBase = piscar ? COLOR_YELLOW_HIGHLIGHT : WHITE;
-                Color corGlow = piscar ? (Color){200, 160, 0, 150} : COLOR_BLUE_HIGHLIGHT;
-                DrawTextGlow("START", (Vector2){ startX, startY }, fontSizeOpcao, corBase, corGlow);
+            //Botão Iniciar
+            float iniciar_y = menu_posicao_y_inicial + (3 * espacamento_vertical) + 20;
+            float iniciar_x = (largura_tela - MeasureText("INICIAR", tamanho_fonte_opcao)) / 2;
+            
+            if (opcao_atual == 3) {
+                bool deve_piscar = fmod(GetTime(), 0.2) > 0.1;
+                Color cor_base = deve_piscar ? COLOR_YELLOW_HIGHLIGHT : WHITE;
+                Color cor_brilho = deve_piscar ? (Color){200, 160, 0, 150} : COLOR_BLUE_HIGHLIGHT;
+                DesenharTextoBrilhante("INICIAR", (Vector2){ iniciar_x, iniciar_y }, tamanho_fonte_opcao, cor_base, cor_brilho);
             } else {
-                DrawTextGlow("START", (Vector2){ startX, startY }, fontSizeOpcao, COLOR_GRAY_OPTION, (Color){50,50,50,100});
+                DesenharTextoBrilhante("INICIAR", (Vector2){ iniciar_x, iniciar_y }, tamanho_fonte_opcao, COLOR_GRAY_OPTION, (Color){50,50,50,100});
             }
 
-            // --- Botão BACK (Índice 4) ---
-            float backY = startY + espacamento; // Logo abaixo do Start
-            float backX = (sw - MeasureText("BACK", fontSizeOpcao)) / 2;
-            if (currentOption == 4) {
-                Color corBase = COLOR_YELLOW_HIGHLIGHT; // Amarelo fixo ao selecionar
-                Color corGlow = (Color){200, 160, 0, 150};
-                DrawTextGlow("BACK", (Vector2){ backX, backY }, fontSizeOpcao, corBase, corGlow);
+            //Botão Voltar
+            float voltar_y = iniciar_y + espacamento_vertical; 
+            float voltar_x = (largura_tela - MeasureText("VOLTAR", tamanho_fonte_opcao)) / 2;
+            
+            if (opcao_atual == 4) {
+                Color cor_base = COLOR_YELLOW_HIGHLIGHT; 
+                Color cor_brilho = (Color){200, 160, 0, 150};
+                DesenharTextoBrilhante("VOLTAR", (Vector2){ voltar_x, voltar_y }, tamanho_fonte_opcao, cor_base, cor_brilho);
             } else {
-                DrawTextGlow("BACK", (Vector2){ backX, backY }, fontSizeOpcao, COLOR_GRAY_OPTION, (Color){50,50,50,100});
+                DesenharTextoBrilhante("VOLTAR", (Vector2){ voltar_x, voltar_y }, tamanho_fonte_opcao, COLOR_GRAY_OPTION, (Color){50,50,50,100});
             }
             
-            // Ajuda
-            DrawText("Use UP/DOWN to navigate, LEFT/RIGHT to change, ENTER to select", 
-                     (sw - MeasureText("Use UP/DOWN to navigate, LEFT/RIGHT to change, ENTER to select", 20)) / 2, 
-                     sh - 40, 20, RAYWHITE);
+            //Dica
+            const char* texto_dica = "Use UP/DOWN to navigate, LEFT/RIGHT to switch, ENTER to select";
+            int largura_texto_dica = MeasureText(texto_dica, 20);
+            DrawText(texto_dica, (largura_tela - largura_texto_dica) / 2, altura_tela - 40, 20, RAYWHITE);
         
+        }
         EndDrawing();
     }
     
     return false; 
 }
 
-// --- Funções de Efeito (Sem alteração) ---
-static void InitMenuEffects(void) {
-    int screenWidth = GetScreenWidth();
-    int screenHeight = GetScreenHeight();
-    for (int i = 0; i < MAX_RAIN_DROPS; i++) {
-        rain[i].pos.x = (float)GetRandomValue(0, screenWidth);
-        rain[i].pos.y = (float)GetRandomValue(-screenHeight, 0); 
-        rain[i].speed = (float)GetRandomValue(200, 600); 
+
+static void InicializarEfeitosMenu(void) {
+    int largura_tela = GetScreenWidth();
+    int altura_tela = GetScreenHeight();
+    
+    //Gotas de Chuva
+    for (int indice = 0; indice < MAX_GOTAS_CHUVA; indice++) {
+        gotas_chuva[indice].posicao.x = (float)GetRandomValue(0, largura_tela);
+        gotas_chuva[indice].posicao.y = (float)GetRandomValue(-altura_tela, 0); 
+        gotas_chuva[indice].velocidade = (float)GetRandomValue(200, 600); 
     }
-    for (int i = 0; i < MAX_PULSES; i++) { pulses[i].alpha = 0.0f; }
-    effectsInitialized = true;
+    
+    //Pulsos Circulares
+    for (int indice = 0; indice < MAX_PULSOS_CIRCULARES; indice++) { 
+        pulsos_circulares[indice].alpha = 0.0f; 
+    }
+    
+    efeitos_inicializados = true;
 }
 
-static void UpdateMenuEffects(void) {
-    int screenWidth = GetScreenWidth();
-    int screenHeight = GetScreenHeight();
-    float frameTime = GetFrameTime(); 
-    for (int i = 0; i < MAX_RAIN_DROPS; i++) {
-        rain[i].pos.y += rain[i].speed * frameTime; 
-        if (rain[i].pos.y > screenHeight) {
-            rain[i].pos.x = (float)GetRandomValue(0, screenWidth);
-            rain[i].pos.y = (float)GetRandomValue(-40, -20); 
-            rain[i].speed = (float)GetRandomValue(200, 600);
+static void AtualizarEfeitosMenu(void) {
+    int largura_tela = GetScreenWidth();
+    int altura_tela = GetScreenHeight();
+    float tempo_quadro = GetFrameTime(); 
+    
+    //Gotas de Chuva
+    for (int indice = 0; indice < MAX_GOTAS_CHUVA; indice++) {
+        gotas_chuva[indice].posicao.y += gotas_chuva[indice].velocidade * tempo_quadro; 
+        
+        if (gotas_chuva[indice].posicao.y > altura_tela) {
+            gotas_chuva[indice].posicao.x = (float)GetRandomValue(0, largura_tela);
+            gotas_chuva[indice].posicao.y = (float)GetRandomValue(-40, -20); 
+            gotas_chuva[indice].velocidade = (float)GetRandomValue(200, 600);
         }
     }
-    for (int i = 0; i < MAX_PULSES; i++) {
-        if (pulses[i].alpha > 0.0f) {
-            pulses[i].radius += 150.0f * frameTime; 
-            pulses[i].alpha -= 0.7f * frameTime;  
-            if (pulses[i].alpha < 0.0f) pulses[i].alpha = 0.0f; 
+    
+    //Pulsos Circulares
+    for (int indice = 0; indice < MAX_PULSOS_CIRCULARES; indice++) {
+        if (pulsos_circulares[indice].alpha > 0.0f) {
+            pulsos_circulares[indice].raio += 150.0f * tempo_quadro; 
+            pulsos_circulares[indice].alpha -= 0.7f * tempo_quadro;  
+            
+            if (pulsos_circulares[indice].alpha < 0.0f) {
+                pulsos_circulares[indice].alpha = 0.0f;
+            }
         } else {
+            //Chance de iniciar um novo pulso
             if (GetRandomValue(0, 1000) > 995) {
-                pulses[i].center.x = (float)GetRandomValue(0, screenWidth);
-                pulses[i].center.y = (float)GetRandomValue(0, screenHeight);
-                pulses[i].radius = 0.0f;
-                pulses[i].alpha = 1.0f; 
+                pulsos_circulares[indice].centro.x = (float)GetRandomValue(0, largura_tela);
+                pulsos_circulares[indice].centro.y = (float)GetRandomValue(0, altura_tela);
+                pulsos_circulares[indice].raio = 0.0f;
+                pulsos_circulares[indice].alpha = 1.0f; 
             }
         }
     }
 }
 
-static void DrawMenuEffects(void) {
-    for (int i = 0; i < MAX_RAIN_DROPS; i++) {
-        DrawRectangle(rain[i].pos.x, rain[i].pos.y, 2, 12, Fade(COLOR_BLUE_HIGHLIGHT, 0.3f));
+static void DesenharEfeitosMenu(void) {
+    //Gotas de Chuva
+    for (int indice = 0; indice < MAX_GOTAS_CHUVA; indice++) {
+        DrawRectangle(gotas_chuva[indice].posicao.x, gotas_chuva[indice].posicao.y, 2, 12, Fade(COLOR_BLUE_HIGHLIGHT, 0.3f));
     }
-    for (int i = 0; i < MAX_PULSES; i++) {
-        if (pulses[i].alpha > 0.0f) {
-            DrawCircleLines(pulses[i].center.x, pulses[i].center.y, pulses[i].radius, Fade(COLOR_YELLOW_HIGHLIGHT, pulses[i].alpha));
+    
+    //Pulsos Circulares
+    for (int indice = 0; indice < MAX_PULSOS_CIRCULARES; indice++) {
+        if (pulsos_circulares[indice].alpha > 0.0f) {
+            DrawCircleLines(pulsos_circulares[indice].centro.x, pulsos_circulares[indice].centro.y, pulsos_circulares[indice].raio, Fade(COLOR_YELLOW_HIGHLIGHT, pulsos_circulares[indice].alpha));
         }
     }
 }
 
-static void DrawTextGlow(const char* text, Vector2 pos, float size, Color base, Color glow) {
-    const int o = 2;
-    DrawText(text, pos.x - o, pos.y, size, glow);
-    DrawText(text, pos.x + o, pos.y, size, glow);
-    DrawText(text, pos.x, pos.y - o, size, glow);
-    DrawText(text, pos.x, pos.y + o, size, glow);
-    DrawText(text, pos.x, pos.y, size, base);
+static void DesenharTextoBrilhante(const char* texto, Vector2 posicao, float tamanho, Color cor_base, Color cor_brilho) {
+    const int deslocamento_brilho = 2;
+    //Brilho
+    DrawText(texto, posicao.x - deslocamento_brilho, posicao.y, tamanho, cor_brilho);
+    DrawText(texto, posicao.x + deslocamento_brilho, posicao.y, tamanho, cor_brilho);
+    DrawText(texto, posicao.x, posicao.y - deslocamento_brilho, tamanho, cor_brilho);
+    DrawText(texto, posicao.x, posicao.y + deslocamento_brilho, tamanho, cor_brilho);
+    //Texto principal
+    DrawText(texto, posicao.x, posicao.y, tamanho, cor_base);
 }

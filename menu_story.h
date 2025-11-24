@@ -10,12 +10,13 @@ typedef enum {
 } StoryDifficulty;
 
 typedef struct {
-    int numPlayers;     // 1 ou 2
-    bool extras;        // true/false
+    //CORREÇÃO: Traduzido para português para corresponder aos arquivos .c
+    int numero_jogadores;     //1 ou 2
+    bool extras_habilitados;  //true/false
     StoryDifficulty difficulty;
 } StorySettings;
 
-// Retorna true se o jogador escolheu START, false se apertou ESC
+// Retorna true se o jogador selecionou START, false se apertou ESC
 bool ExecutarMenuStory(StorySettings *settings);
 
-#endif // MENU_STORY_H
+#endif 
