@@ -92,15 +92,13 @@ bool ExecutarTelaInicio(void) {
           Vector2 posicao_subtitulo = { (largura_tela - tamanho_subtitulo_encontrado.x)/2.0f, altura_tela*0.60f };
 
           //Desenha o TÍTULO
-          DesenharTextoBrilhante(fonte_principal, TEXTO_TITULO, posicao_titulo, tamanho_titulo, espacamento_texto,
-                       (Color){150,240,255,255}, (Color){ 20,140,180,120 });
+          DesenharTextoBrilhante(fonte_principal, TEXTO_TITULO, posicao_titulo, tamanho_titulo, espacamento_texto,(Color){150,240,255,255}, (Color){ 20,140,180,120 });
 
           //Lógica do efeito de piscar
           double tempo_piscando = fmod(GetTime(), 0.8);
           if (tempo_piscando < 0.4) {
-              // Desenha o SUBTÍTULO
-              DesenharTextoBrilhante(fonte_principal, TEXTO_SUBTITULO, posicao_subtitulo, tamanho_subtitulo, espacamento_texto,
-                           (Color){140,230,255,255}, (Color){ 10,120,200,110 });
+              //Desenha o SUBTÍTULO
+              DesenharTextoBrilhante(fonte_principal, TEXTO_SUBTITULO, posicao_subtitulo, tamanho_subtitulo, espacamento_texto,(Color){140,230,255,255}, (Color){ 10,120,200,110 });
           }
 
           //Desenha a dica de teclas
