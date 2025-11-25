@@ -4,7 +4,7 @@
 #include "jogador.h"  // <--- Necessário para verificar vida dos jogadores
 #include "raylib.h"
 
-#define EXPLOSAO_FRAME_SPEED 0.15f 
+#define VELOCIDADE_FRAME_EXPLOSAO 0.15f 
 
 NodeExplosoes CriarNodeExplosoes(void)
 {
@@ -14,8 +14,12 @@ NodeExplosoes CriarNodeExplosoes(void)
     g.texExplo1 = LoadTexture("bombapng/explo1.png");
     g.texExplo2 = LoadTexture("bombapng/explo2.png");
 
-    if (g.texExplo1.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar bombapng/explo1.png");
-    if (g.texExplo2.id == 0) TraceLog(LOG_WARNING, "Falha ao carregar bombapng/explo2.png");
+    if (g.texExplo1.id == 0) {
+        TraceLog(LOG_WARNING, "Falha ao carregar bombapng/explo1.png");
+    }
+    if (g.texExplo2.id == 0) {
+        TraceLog(LOG_WARNING, "Falha ao carregar bombapng/explo2.png");
+    }
 
     for (int i = 0; i < MAX_EXPLOSOES; i++) {
         g.explosoes[i].ativa = false;
@@ -26,12 +30,14 @@ NodeExplosoes CriarNodeExplosoes(void)
 // Ativa apenas o efeito visual (frame único)
 void AtivarExplosao(NodeExplosoes *g, Vector2 pos)
 {
-    if (g->quantidade >= MAX_EXPLOSOES) return; 
+    if (g->quantidade >= MAX_EXPLOSOES) {
+        return; 
+    }
 
     // Procura slot inativo para reciclar
     int slot = -1;
     for(int i=0; i<MAX_EXPLOSOES; i++) {
-        if(!g->explosoes[i].ativa) {
+        if (g->explosoes[i].ativa == false) {
             slot = i;
             break;
         }
@@ -46,30 +52,32 @@ void AtivarExplosao(NodeExplosoes *g, Vector2 pos)
         Explosao *e = &g->explosoes[slot];
         e->pos = pos;
         e->ativa = true;
-        e->currentFrame = 0; 
-        e->frameTimer = 0.0f;
+        e->frameAtual = 0; 
+        e->temporizadorFrame = 0.0f;
     }
 }
 
 // --- Lógica de Dano (Copiada e adaptada para cá) ---
-static void VerificarDanoJogadores(int gridX, int gridY, Jogador* jogadores[], int numJogadores)
+static void VerificarDanoJogadores(int gradeX, int gradeY, Jogador* jogadores[], int numJogadores)
 {
     for (int i = 0; i < numJogadores; i++)
     {
         Jogador *j = jogadores[i];
-        if (!j->vivo) continue;
+        if (j->vivo == false) {
+            continue;
+        }
 
         // Centro do jogador
-        float centerX = j->pos.x + (TILE_SIZE / 2.0f);
-        float centerY = j->pos.y + (TILE_SIZE / 2.0f);
-        int pGridX = (int)(centerX / TILE_SIZE);
-        int pGridY = (int)(centerY / TILE_SIZE);
+        float centroX = j->pos.x + (TAMANHO_TILE / 2.0f);
+        float centroY = j->pos.y + (TAMANHO_TILE / 2.0f);
+        int pGradeX = (int)(centroX / TAMANHO_TILE);
+        int pGradeY = (int)(centroY / TAMANHO_TILE);
 
-        if (pGridX == gridX && pGridY == gridY)
+        if (pGradeX == gradeX && pGradeY == gradeY)
         {
             // --- Verifica POWER-UP de DEFESA ---
-            if (j->temDefesa) {
-                // O jogador sobrevive! (Opcional: j->temDefesa = false; para gastar o escudo)
+            if (j->temDefesa == true) {
+                // O jogador sobrevive! 
                 continue; 
             }
             
@@ -79,27 +87,31 @@ static void VerificarDanoJogadores(int gridX, int gridY, Jogador* jogadores[], i
 }
 
 // --- Lógica de Propagação e Drop de Extras ---
-static void PropagarDirecao(NodeExplosoes *g, int startX, int startY, int dx, int dy, int range, Jogador* jogadores[], int numJogadores)
+static void PropagarDirecao(NodeExplosoes *g, int inicioX, int inicioY, int dx, int dy, int alcance, Jogador* jogadores[], int numJogadores)
 {
-    for (int i = 1; i <= range; i++)
+    for (int i = 1; i <= alcance; i++)
     {
-        int checkX = startX + (dx * i);
-        int checkY = startY + (dy * i);
+        int verificarX = inicioX + (dx * i);
+        int verificarY = inicioY + (dy * i);
         
         // 1. Verifica Jogadores
-        VerificarDanoJogadores(checkX, checkY, jogadores, numJogadores);
+        VerificarDanoJogadores(verificarX, verificarY, jogadores, numJogadores);
         
         // 2. Verifica Paredes
-        TileType tipo = GetTileTipo(checkX, checkY);
-        Vector2 posPixel = { (float)checkX * TILE_SIZE, (float)checkY * TILE_SIZE };
+        TipoTile tipo = ObterTipoTile(verificarX, verificarY);
+        Vector2 posPixel = { (float)verificarX * TAMANHO_TILE, (float)verificarY * TAMANHO_TILE };
         
-        if (tipo == TILE_INDESTRUCTIBLE) {
+        // CORREÇÃO: TILE_INDESTRUCTIBLE -> TILE_INDESTRUTIVEL
+        if (tipo == TILE_INDESTRUTIVEL) {
             break; // Para a explosão
         }
         
-        if (tipo == TILE_DESTRUCTIBLE) {
+        // CORREÇÃO: TILE_DESTRUCTIBLE -> TILE_DESTRUTIVEL
+        if (tipo == TILE_DESTRUTIVEL) {
             // Quebra o bloco
-            SetTileTipo(checkX, checkY, TILE_EMPTY); 
+            // CORREÇÃO: SetTileTipo -> DefinirTipoTile
+            // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO
+            DefinirTipoTile(verificarX, verificarY, TILE_VAZIO); 
             
             // Visual da explosão no bloco
             AtivarExplosao(g, posPixel);
@@ -111,61 +123,59 @@ static void PropagarDirecao(NodeExplosoes *g, int startX, int startY, int dx, in
             break; // Para a explosão ao quebrar o bloco
         }
         
-        if (tipo == TILE_EMPTY) {
+        // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO
+        if (tipo == TILE_VAZIO) {
             AtivarExplosao(g, posPixel); 
         }
     }
 }
 
 // --- Função Principal chamada pelo bomba.c ---
-void CriarExplosao(NodeExplosoes *g, Vector2 centro, int range, Jogador* jogadores[], int numJogadores)
+void CriarExplosao(NodeExplosoes *g, Vector2 centro, int alcance, Jogador* jogadores[], int numJogadores)
 {
-    Vector2 gridPos = GetGridPosFromPixels(centro);
-    int gridX = (int)gridPos.x;
-    int gridY = (int)gridPos.y;
+    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels
+    Vector2 posGrade = ObterPosGradeDePixels(centro);
+    int gradeX = (int)posGrade.x;
+    int gradeY = (int)posGrade.y;
 
     // 1. Explode o centro
     AtivarExplosao(g, centro);
-    VerificarDanoJogadores(gridX, gridY, jogadores, numJogadores);
+    VerificarDanoJogadores(gradeX, gradeY, jogadores, numJogadores);
     
     // Caso raro: bomba em cima de bloco quebrável
-    if (GetTileTipo(gridX, gridY) == TILE_DESTRUCTIBLE) {
-        SetTileTipo(gridX, gridY, TILE_EMPTY);
+    // CORREÇÃO: TILE_DESTRUCTIBLE -> TILE_DESTRUTIVEL
+    if (ObterTipoTile(gradeX, gradeY) == TILE_DESTRUTIVEL) {
+        // CORREÇÃO: SetTileTipo -> DefinirTipoTile
+        // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO
+        DefinirTipoTile(gradeX, gradeY, TILE_VAZIO);
         SpawnarExtra(centro);
     }
 
     // 2. Propaga para as 4 direções
-    PropagarDirecao(g, gridX, gridY,  1,  0, range, jogadores, numJogadores); // Direita
-    PropagarDirecao(g, gridX, gridY, -1,  0, range, jogadores, numJogadores); // Esquerda
-    PropagarDirecao(g, gridX, gridY,  0,  1, range, jogadores, numJogadores); // Baixo
-    PropagarDirecao(g, gridX, gridY,  0, -1, range, jogadores, numJogadores); // Cima
+    PropagarDirecao(g, gradeX, gradeY,  1,  0, alcance, jogadores, numJogadores); // Direita
+    PropagarDirecao(g, gradeX, gradeY, -1,  0, alcance, jogadores, numJogadores); // Esquerda
+    PropagarDirecao(g, gradeX, gradeY,  0,  1, alcance, jogadores, numJogadores); // Baixo
+    PropagarDirecao(g, gradeX, gradeY,  0, -1, alcance, jogadores, numJogadores); // Cima
 }
 
 // --- Funções Padrão (Atualizar/Desenhar) ---
 
 void AtualizarExplosoes(NodeExplosoes *g, float deltaTime)
 {
-    for (int i = 0; i < MAX_EXPLOSOES; i++) { // Percorre array fixo para evitar problemas de índice
+    for (int i = 0; i < MAX_EXPLOSOES; i++) { // Percorre array fixo
         Explosao *e = &g->explosoes[i];
-        if (!e->ativa) continue;
+        if (e->ativa == false) {
+            continue;
+        }
 
-        e->frameTimer += deltaTime;
+        e->temporizadorFrame += deltaTime;
         
-        if (e->frameTimer >= EXPLOSAO_FRAME_SPEED) {
-            e->frameTimer = 0.0f;
-            e->currentFrame++; 
+        if (e->temporizadorFrame >= VELOCIDADE_FRAME_EXPLOSAO) {
+            e->temporizadorFrame = 0.0f;
+            e->frameAtual++; 
             
-            if (e->currentFrame >= 2) {
+            if (e->frameAtual >= 2) {
                 e->ativa = false; 
-                // Não precisamos reordenar o array se usarmos slots fixos, 
-                // mas se usarmos o método de "pilha" (g->quantidade), mantemos:
-                /*
-                g->explosoes[i] = g->explosoes[g->quantidade - 1];
-                g->explosoes[g->quantidade - 1].ativa = false;
-                g->quantidade--;
-                i--;
-                */
-                // Nota: Com MAX_EXPLOSOES alto, apenas desativar é mais seguro e simples.
             }
         }
     }
@@ -173,22 +183,30 @@ void AtualizarExplosoes(NodeExplosoes *g, float deltaTime)
 
 void DesenharExplosoes(const NodeExplosoes *g)
 {
-    Vector2 origin = { 0, 0 };
+    Vector2 origem = { 0, 0 };
     
     for (int i = 0; i < MAX_EXPLOSOES; i++) {
         const Explosao *e = &g->explosoes[i];
-        if (!e->ativa) continue;
+        if (e->ativa == false) {
+            continue;
+        }
 
-        Texture2D texToDraw = (e->currentFrame == 0) ? g->texExplo1 : g->texExplo2;
+        Texture2D texDesenhar;
+        if (e->frameAtual == 0) {
+            texDesenhar = g->texExplo1;
+        } else {
+            texDesenhar = g->texExplo2;
+        }
         
-        Rectangle sourceRec = { 0, 0, (float)texToDraw.width, (float)texToDraw.height };
-        Rectangle destRec = { e->pos.x, e->pos.y, TILE_SIZE, TILE_SIZE };
+        Rectangle recFonte = { 0, 0, (float)texDesenhar.width, (float)texDesenhar.height };
+        Rectangle recDestino = { e->pos.x, e->pos.y, TAMANHO_TILE, TAMANHO_TILE };
         
-        DrawTexturePro(texToDraw, sourceRec, destRec, origin, 0.0f, WHITE);
+        DrawTexturePro(texDesenhar, recFonte, recDestino, origem, 0.0f, WHITE);
     }
 }
 
-void UnloadExplosoes(NodeExplosoes *g)
+// CORREÇÃO: UnloadExplosoes -> DescarregarExplosoes
+void DescarregarExplosoes(NodeExplosoes *g)
 {
     UnloadTexture(g->texExplo1);
     UnloadTexture(g->texExplo2);

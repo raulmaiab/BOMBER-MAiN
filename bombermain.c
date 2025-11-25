@@ -5,7 +5,7 @@
 #include "menu_story.h" 
 #include "menu_prox.h"  
 #include "options.h"    
-#include "mapa.h"       
+#include "mapa.h"       // Contém ObterPosicaoInicialJogador, TAMANHO_TILE, etc.
 #include "jogador.h"    
 #include "bomba.h"      
 #include "explosao.h" 
@@ -19,22 +19,23 @@
 #include <stdio.h>    
 #include <string.h>       
 
-const int SCREEN_WIDTH = 1440;
-const int SCREEN_HEIGHT = 900;
+// --- DEFINIÇÕES GLOBAIS ---
+const int LARGURA_TELA = 1440;
+const int ALTURA_TELA = 900;
 
-// Assinaturas
-OptionsAction ExecutarJogoBattle(BattleSettings settings);
-OptionsAction ExecutarJogoStory(StorySettings settings); 
-OptionsAction ExecutarNivelStory(StorySettings settings, const char* nomeMapa, int nivel, bool* nivelVitoria); 
-void ExecutarShop(void);
-void ExecutarOther(void);
+// Assinaturas (Traduzidas)
+OptionsAction ExecutarJogoBatalha(BattleSettings configuracoes);
+OptionsAction ExecutarJogoHistoria(StorySettings configuracoes); 
+OptionsAction ExecutarNivelHistoria(StorySettings configuracoes, const char* nomeMapa, int nivel, bool* nivelVitoria); 
+void ExecutarLoja(void);
+void ExecutarOutros(void);
 
 // -----------------------------------------------------------------------------------
 // --- MAIN LOOP ---
 // -----------------------------------------------------------------------------------
 int main(void)
 {
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "BomberMain");
+    InitWindow(LARGURA_TELA, ALTURA_TELA, "BomberMain");
     ToggleFullscreen();
     SetTargetFPS(60);
     
@@ -42,8 +43,8 @@ int main(void)
 
     bool deveContinuar = ExecutarTelaInicio();
     
-    BattleSettings lastBattleSettings = {0};
-    StorySettings lastStorySettings = {0};
+    BattleSettings ultimasConfiguracoesBatalha = {0};
+    StorySettings ultimasConfiguracoesHistoria = {0};
     OpcaoMenu ultimoModo = ESCOLHA_NENHUMA_OU_FECHOU;
     
     while (deveContinuar == true && WindowShouldClose() == 0)
@@ -59,14 +60,14 @@ int main(void)
                     
                     if (iniciar == true)
                     {
-                        lastBattleSettings = configuracoes;
+                        ultimasConfiguracoesBatalha = configuracoes;
                         ultimoModo = ESCOLHA_BATTLE;
                         
                         OptionsAction acao;
                         
                         // Loop para RESTART no MODO BATTLE
                         do {
-                            acao = ExecutarJogoBattle(lastBattleSettings); 
+                            acao = ExecutarJogoBatalha(ultimasConfiguracoesBatalha); 
                             
                             if (acao == OPTIONS_ACAO_EDIT_GAME) {
                                 escolha = ESCOLHA_BATTLE; 
@@ -89,14 +90,14 @@ int main(void)
                     
                     if (iniciar == true)
                     {
-                        lastStorySettings = configuracoes_story;
+                        ultimasConfiguracoesHistoria = configuracoes_story;
                         ultimoModo = ESCOLHA_STORY;
                         
                         OptionsAction acao;
                         
                         // Loop para RESTART no MODO STORY
                         do {
-                            acao = ExecutarJogoStory(lastStorySettings); 
+                            acao = ExecutarJogoHistoria(ultimasConfiguracoesHistoria); 
                             
                             if (acao == OPTIONS_ACAO_EDIT_GAME) {
                                 escolha = ESCOLHA_STORY; 
@@ -116,22 +117,21 @@ int main(void)
                 deveContinuar = false;
                 break;
             default:
-                // Se o menu retornar outras opções (SHOP/OTHER), adicione a lógica aqui.
                 break;
         }
     }
     
-    DescarregarExtras();
+    DescarregarExtras(); // CORREÇÃO: Função DescarregarExtras()
     CloseWindow(); 
     return 0;
 }
 
 // -----------------------------------------------------------------------------------
-// --- MODO BATTLE ---
+// --- MODO BATTLE (ExecutarJogoBatalha) ---
 // -----------------------------------------------------------------------------------
-OptionsAction ExecutarJogoBattle(BattleSettings configuracoes) {
+OptionsAction ExecutarJogoBatalha(BattleSettings configuracoes) {
     
-    SetExtrasHabilitados(configuracoes.extras_habilitados);
+    DefinirExtrasHabilitados(configuracoes.extras_habilitados); // CORREÇÃO: Função DefinirExtrasHabilitados()
 
     if (configuracoes.indice_mapa == 1) {
         InicializarMapa("Cave");
@@ -146,25 +146,38 @@ OptionsAction ExecutarJogoBattle(BattleSettings configuracoes) {
     ResetarExtras();
     
     bool j1_ehHumano = true;
-    // CORREÇÃO: Usando numero_jogadores
-    bool j4_ehHumano = (configuracoes.numero_jogadores == 2); 
+
+    // CORREÇÃO: Lógica ajustada para j4_ehHumano
+    bool j4_ehHumano;
+    if (configuracoes.numero_jogadores == 2) {
+        j4_ehHumano = true; // 2P: J1 e J4 são humanos
+    } else {
+        j4_ehHumano = false; // 1P: J4 é bot
+    }
     
     // Jogadores
-    Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco", j1_ehHumano == false); // J1 é humano, AI = false
-    Jogador j2 = CriarJogador(GetPlayerStartPosition(1), "SpriteVermelho", true);      
-    Jogador j3 = CriarJogador(GetPlayerStartPosition(2), "SpriteAzul", true);      
-    Jogador j4 = CriarJogador(GetPlayerStartPosition(3), "SpritePreto", j4_ehHumano == false); // J4 é humano se numPlayers == 2
+    // Os bots são inicializados com 'isBot' = true
+    Jogador j1 = CriarJogador(ObterPosicaoInicialJogador(0), "SpriteBranco", j1_ehHumano == false); // J1 é humano, então isBot=false
+    Jogador j2 = CriarJogador(ObterPosicaoInicialJogador(1), "SpriteVermelho", true);      // Bot
+    Jogador j3 = CriarJogador(ObterPosicaoInicialJogador(2), "SpriteAzul", true);      // Bot
+    Jogador j4 = CriarJogador(ObterPosicaoInicialJogador(3), "SpritePreto", j4_ehHumano == false); // J4 é bot se j4_ehHumano=false
     
     Jogador* todosJogadores[] = {&j1, &j2, &j3, &j4};
     int numJogadores = 4;
     NodeBombas gBombas = CriarNodeBombas();
     NodeExplosoes gExplosoes = CriarNodeExplosoes();
     
+    // Alvos para a IA no modo 1P/2P
     Jogador* p1_target = &j1;
-    Jogador* p2_target = (j4_ehHumano == true) ? &j4 : NULL; 
+    Jogador* p2_target;
+    // CORREÇÃO: p2_target deve apontar para J4 se J4 for humano (2P)
+    if (j4_ehHumano == true) { 
+        p2_target = &j4;
+    } else {
+        p2_target = NULL;
+    } 
     
     OptionsAction acaoRetorno = OPTIONS_ACAO_MAIN_MENU;
-    
     bool isPaused = false;
 
     while (WindowShouldClose() == 0) {
@@ -177,17 +190,22 @@ OptionsAction ExecutarJogoBattle(BattleSettings configuracoes) {
             float deltaTime = GetFrameTime(); 
 
             // Atualização dos Jogadores
+            // J1: Branco (Humano)
+            // Os alvos p1_target/p2_target são passados para o AtualizarJogador para auxiliar a IA.
             AtualizarJogador(&j1, KEY_W, KEY_S, KEY_A, KEY_D, KEY_SPACE, &gBombas, deltaTime, p1_target, p2_target); 
+            // J2: Vermelho (Bot)
             AtualizarJogador(&j2, 0, 0, 0, 0, 0, &gBombas, deltaTime, p1_target, p2_target);
+            // J3: Azul (Bot)
             AtualizarJogador(&j3, 0, 0, 0, 0, 0, &gBombas, deltaTime, p1_target, p2_target); 
             
+            // J4: Preto (Humano em 2P ou Bot em 1P)
             if (j4_ehHumano == true) { 
                 AtualizarJogador(&j4, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_J, &gBombas, deltaTime, p1_target, p2_target);
             } else {
                 AtualizarJogador(&j4, 0, 0, 0, 0, 0, &gBombas, deltaTime, p1_target, p2_target);
             }
             
-            // Verificar Coleta de Extras
+            // Verificar Coleta de Extras (Chamada única no .c da extras)
             VerificarColetaExtras(&j1);
             VerificarColetaExtras(&j2);
             VerificarColetaExtras(&j3);
@@ -197,7 +215,6 @@ OptionsAction ExecutarJogoBattle(BattleSettings configuracoes) {
             AtualizarExplosoes(&gExplosoes, deltaTime);
 
             // Lógica de Vitória/Derrota
-            // CORREÇÃO: Usando numero_jogadores
             if (configuracoes.numero_jogadores == 1) {
                 // Modo 1P: J1 (Branco) vs. Bots (Vermelho, Azul, Preto)
                 if (j1.vivo == false) { 
@@ -209,7 +226,9 @@ OptionsAction ExecutarJogoBattle(BattleSettings configuracoes) {
                     reg.vencedor[sizeof(reg.vencedor) - 1] = '\0';
                     AdicionarRegistroHistorico(reg);
                     // ---------------------------
-                    ExecutarTelaDerrota(); acaoRetorno = OPTIONS_ACAO_MAIN_MENU; break; 
+                    ExecutarTelaDerrota(); 
+                    acaoRetorno = OPTIONS_ACAO_MAIN_MENU; 
+                    break; 
                 }
                 if (j1.vivo == true && j2.vivo == false && j3.vivo == false && j4.vivo == false) { 
                     // J1 VENCEU
@@ -221,8 +240,10 @@ OptionsAction ExecutarJogoBattle(BattleSettings configuracoes) {
                     reg.vencedor[sizeof(reg.vencedor) - 1] = '\0';
                     AdicionarRegistroHistorico(reg);
                     // ---------------------------
-                    ExecutarTelaVitoriaBattle(j1.spriteName); 
-                    acaoRetorno = OPTIONS_ACAO_MAIN_MENU; break; 
+                    // CORREÇÃO: Usar j1.nomeSprite
+                    ExecutarTelaVitoriaBattle(j1.nomeSprite); 
+                    acaoRetorno = OPTIONS_ACAO_MAIN_MENU; 
+                    break; 
                 }
             } else { // 2 Players
                 // Modo 2P: J1 (Branco) e J4 (Preto) vs. Bots (Vermelho, Azul)
@@ -241,7 +262,9 @@ OptionsAction ExecutarJogoBattle(BattleSettings configuracoes) {
                     reg.vencedor[sizeof(reg.vencedor) - 1] = '\0';
                     AdicionarRegistroHistorico(reg);
                     // ---------------------------
-                    ExecutarTelaDerrota(); acaoRetorno = OPTIONS_ACAO_MAIN_MENU; break; 
+                    ExecutarTelaDerrota(); 
+                    acaoRetorno = OPTIONS_ACAO_MAIN_MENU; 
+                    break; 
                 } 
                 else if (p1_vivo == true && bots_mortos == true && p4_vivo == false) {
                     // J1 vivo, Bots mortos, J4 (P2) morto -> J1 VENCEU (PvP Vitoria vs J4)
@@ -253,8 +276,10 @@ OptionsAction ExecutarJogoBattle(BattleSettings configuracoes) {
                     reg.vencedor[sizeof(reg.vencedor) - 1] = '\0';
                     AdicionarRegistroHistorico(reg);
                     // ------------------------------
-                    ExecutarTelaVitoriaBattle(j1.spriteName); 
-                    acaoRetorno = OPTIONS_ACAO_MAIN_MENU; break;
+                    // CORREÇÃO: Usar j1.nomeSprite
+                    ExecutarTelaVitoriaBattle(j1.nomeSprite); 
+                    acaoRetorno = OPTIONS_ACAO_MAIN_MENU; 
+                    break;
                 }
                 else if (p4_vivo == true && bots_mortos == true && p1_vivo == false) {
                     // J4 vivo, Bots mortos, J1 (P1) morto -> J4 VENCEU (PvP Vitoria vs J1)
@@ -266,8 +291,10 @@ OptionsAction ExecutarJogoBattle(BattleSettings configuracoes) {
                     reg.vencedor[sizeof(reg.vencedor) - 1] = '\0';
                     AdicionarRegistroHistorico(reg);
                     // ------------------------------
-                    ExecutarTelaVitoriaBattle(j4.spriteName); 
-                    acaoRetorno = OPTIONS_ACAO_MAIN_MENU; break;
+                    // CORREÇÃO: Usar j4.nomeSprite
+                    ExecutarTelaVitoriaBattle(j4.nomeSprite); 
+                    acaoRetorno = OPTIONS_ACAO_MAIN_MENU; 
+                    break;
                 }
                 // Se (p1_vivo && p4_vivo && bots_mortos), o jogo continua (PvP).
             }
@@ -306,23 +333,22 @@ OptionsAction ExecutarJogoBattle(BattleSettings configuracoes) {
     DestruirJogador(&j1); DestruirJogador(&j2);
     DestruirJogador(&j3); DestruirJogador(&j4);
     UnloadBombas(&gBombas);
-    UnloadExplosoes(&gExplosoes);
+    DescarregarExplosoes(&gExplosoes); // CORREÇÃO: DescarregarExplosoes
     
     return acaoRetorno;
 }
 
 // -----------------------------------------------------------------------------------
-// --- MODO STORY (Controlador de Níveis) ---
+// --- MODO STORY (ExecutarJogoHistoria - Controlador de Níveis) ---
 // -----------------------------------------------------------------------------------
-OptionsAction ExecutarJogoStory(StorySettings configuracoes)
+OptionsAction ExecutarJogoHistoria(StorySettings configuracoes)
 {
     // Define a ordem dos mapas: Default -> Cave -> Pirate Boat
     const char* mapasStory[] = {"Default", "Cave", "PirateBoat"};
     int totalNiveis = 3;
     OptionsAction acaoRetorno = OPTIONS_ACAO_MAIN_MENU;
     
-    // CORREÇÃO: Usando extras_habilitados
-    SetExtrasHabilitados(configuracoes.extras_habilitados);
+    DefinirExtrasHabilitados(configuracoes.extras_habilitados); // CORREÇÃO: Função DefinirExtrasHabilitados()
     
     bool nivelVitoria = false;
 
@@ -335,7 +361,7 @@ OptionsAction ExecutarJogoStory(StorySettings configuracoes)
         
         // --- LOOP PARA RESTART DENTRO DO NÍVEL ---
         do {
-            acaoNivel = ExecutarNivelStory(configuracoes, mapaAtual, nivel, &nivelVitoria);
+            acaoNivel = ExecutarNivelHistoria(configuracoes, mapaAtual, nivel, &nivelVitoria);
             
             if (acaoNivel != OPTIONS_ACAO_MAIN_MENU && acaoNivel != OPTIONS_ACAO_RESTART)
             {
@@ -377,19 +403,23 @@ OptionsAction ExecutarJogoStory(StorySettings configuracoes)
 }
 
 
-// --- LÓGICA DE JOGO POR NÍVEL ---
-OptionsAction ExecutarNivelStory(StorySettings configuracoes, const char* nomeMapa, int nivel, bool* nivelVitoria)
+// --- LÓGICA DE JOGO POR NÍVEL (ExecutarNivelHistoria) ---
+OptionsAction ExecutarNivelHistoria(StorySettings configuracoes, const char* nomeMapa, int nivel, bool* nivelVitoria)
 {
     // Inicialização do Mapa
     InicializarMapa(nomeMapa); 
     ResetarExtras();
 
     // VARIÁVEIS DE CONTROLE
-    // CORREÇÃO: Usando numero_jogadores
-    bool doisJogadores = (configuracoes.numero_jogadores == 2);
+    bool doisJogadores;
+    if (configuracoes.numero_jogadores == 2) {
+        doisJogadores = true;
+    } else {
+        doisJogadores = false;
+    }
     
     // POSIÇÕES DOS JOGADORES
-    Jogador j1 = CriarJogador(GetPlayerStartPosition(0), "SpriteBranco", false); 
+    Jogador j1 = CriarJogador(ObterPosicaoInicialJogador(0), "SpriteBranco", false); 
     
     Jogador j2 = {0};       
     Jogador j_botA = {0};   
@@ -401,17 +431,17 @@ OptionsAction ExecutarNivelStory(StorySettings configuracoes, const char* nomeMa
     // -----------------------------------------------------------------------------------
 
     if (doisJogadores == true) {
-        // MODO: 2 PLAYERS (J1, J2, BotA, BotB)
-        j2 = CriarJogador(GetPlayerStartPosition(3), "SpritePreto", false); 
-        j_botA = CriarJogador(GetPlayerStartPosition(1), "SpriteVermelho", true); 
-        j_botB = CriarJogador(GetPlayerStartPosition(2), "SpriteAzul", true); 
+        // MODO: 2 PLAYERS (J1(B), J2(P), BotA(V), BotB(A))
+        j2 = CriarJogador(ObterPosicaoInicialJogador(3), "SpritePreto", false); 
+        j_botA = CriarJogador(ObterPosicaoInicialJogador(1), "SpriteVermelho", true); 
+        j_botB = CriarJogador(ObterPosicaoInicialJogador(2), "SpriteAzul", true); 
         j_botC.vivo = false; 
     } else {
-        // MODO: 1 PLAYER (J1, BotA, BotB, BotC)
+        // MODO: 1 PLAYER (J1(B), BotA(V), BotB(A), BotC(P))
         j2.vivo = false; 
-        j_botA = CriarJogador(GetPlayerStartPosition(1), "SpriteVermelho", true); 
-        j_botB = CriarJogador(GetPlayerStartPosition(2), "SpriteAzul", true); 
-        j_botC = CriarJogador(GetPlayerStartPosition(3), "SpritePreto", true); 
+        j_botA = CriarJogador(ObterPosicaoInicialJogador(1), "SpriteVermelho", true); 
+        j_botB = CriarJogador(ObterPosicaoInicialJogador(2), "SpriteAzul", true); 
+        j_botC = CriarJogador(ObterPosicaoInicialJogador(3), "SpritePreto", true); 
     }
     
     // Configuração de listas GLOBAIS
@@ -432,8 +462,14 @@ OptionsAction ExecutarNivelStory(StorySettings configuracoes, const char* nomeMa
     int numJogadoresTotal = 4;
     
     // Lista de jogadores humanos vivos (para checar derrota)
-    Jogador* jogadoresHumanos[] = {&j1, doisJogadores ? &j2 : NULL};
+    Jogador* jogadoresHumanos[2];
+    jogadoresHumanos[0] = &j1;
     int numHumanos = doisJogadores ? 2 : 1;
+    if (doisJogadores) {
+        jogadoresHumanos[1] = &j2;
+    } else {
+        jogadoresHumanos[1] = NULL;
+    }
     
     // Lista de bots vivos (para checar vitória)
     Jogador* jogadoresBots[3];
@@ -467,10 +503,12 @@ OptionsAction ExecutarNivelStory(StorySettings configuracoes, const char* nomeMa
             
             // --- UPDATE JOGADORES HUMANOS ---
             if (j1.vivo == true) { 
+                // Passando NULL para os alvos (p1/p2_target) no modo Story
                 AtualizarJogador(&j1, KEY_W, KEY_S, KEY_A, KEY_D, KEY_SPACE, &gBombas, deltaTime, NULL, NULL); 
                 VerificarColetaExtras(&j1); 
             }
             if (doisJogadores == true && j2.vivo == true) { 
+                // Passando NULL para os alvos (p1/p2_target) no modo Story
                 AtualizarJogador(&j2, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_J, &gBombas, deltaTime, NULL, NULL); 
                 VerificarColetaExtras(&j2); 
             }
@@ -510,7 +548,9 @@ OptionsAction ExecutarNivelStory(StorySettings configuracoes, const char* nomeMa
                 
                 AdicionarRegistroHistorico(reg);
                 // ---------------------------------
-                ExecutarTelaDerrota(); acaoRetorno = OPTIONS_ACAO_MAIN_MENU; break; 
+                ExecutarTelaDerrota(); 
+                acaoRetorno = OPTIONS_ACAO_MAIN_MENU; 
+                break; 
             }
 
             // --- LÓGICA DE VITÓRIA ---
@@ -526,7 +566,12 @@ OptionsAction ExecutarNivelStory(StorySettings configuracoes, const char* nomeMa
                 
                 // --- REGISTRO DE VITORIA STORY ---
                 RegistroBatalha reg;
-                const char* vencedor_str = (numHumanos == 1) ? "Player 1 (Branco)" : "Equipe Humana (Branco/Preto)";
+                const char* vencedor_str;
+                if (numHumanos == 1) {
+                    vencedor_str = "Player 1 (Branco)";
+                } else {
+                    vencedor_str = "Equipe Humana (Branco/Preto)";
+                }
                 
                 strncpy(reg.modo, TextFormat("Story Nivel %d (%dP)", nivel + 1, numHumanos), sizeof(reg.modo) - 1);
                 reg.modo[sizeof(reg.modo) - 1] = '\0';
@@ -551,11 +596,21 @@ OptionsAction ExecutarNivelStory(StorySettings configuracoes, const char* nomeMa
 
             DesenharExtras();
             
-            if (j1.vivo == true) DesenharJogador(&j1);
-            if (doisJogadores == true && j2.vivo == true) DesenharJogador(&j2);
-            if (j_botA.vivo == true) DesenharJogador(&j_botA);
-            if (j_botB.vivo == true) DesenharJogador(&j_botB);
-            if (doisJogadores == false && j_botC.vivo == true) DesenharJogador(&j_botC); 
+            if (j1.vivo == true) { 
+                DesenharJogador(&j1);
+            }
+            if (doisJogadores == true && j2.vivo == true) { 
+                DesenharJogador(&j2);
+            }
+            if (j_botA.vivo == true) { 
+                DesenharJogador(&j_botA);
+            }
+            if (j_botB.vivo == true) { 
+                DesenharJogador(&j_botB);
+            }
+            if (doisJogadores == false && j_botC.vivo == true) { 
+                DesenharJogador(&j_botC); 
+            }
 
             DesenharBombas(&gBombas);
             DesenharExplosoes(&gExplosoes);
@@ -578,20 +633,24 @@ OptionsAction ExecutarNivelStory(StorySettings configuracoes, const char* nomeMa
     // Descarregamento
     DescarregarMapa(); 
     DestruirJogador(&j1);
-    if (doisJogadores == true) DestruirJogador(&j2);
+    if (doisJogadores == true) {
+        DestruirJogador(&j2);
+    }
     DestruirJogador(&j_botA); 
     DestruirJogador(&j_botB);
-    if (doisJogadores == false) DestruirJogador(&j_botC); 
+    if (doisJogadores == false) {
+        DestruirJogador(&j_botC); 
+    }
     UnloadBombas(&gBombas);
-    UnloadExplosoes(&gExplosoes);
+    DescarregarExplosoes(&gExplosoes); // CORREÇÃO: DescarregarExplosoes
     
     return acaoRetorno;
 }
 
 // -----------------------------------------------------------------------------------
-// --- TELAS SIMPLES ---
+// --- TELAS SIMPLES (ExecutarLoja/ExecutarOutros) ---
 // -----------------------------------------------------------------------------------
-void ExecutarShop(void) {
+void ExecutarLoja(void) {
     while (WindowShouldClose() == 0) {
         if (IsKeyPressed(KEY_ESCAPE)) { 
             break;
@@ -604,7 +663,7 @@ void ExecutarShop(void) {
         EndDrawing();
     }
 }
-void ExecutarOther(void) {
+void ExecutarOutros(void) {
     while (WindowShouldClose() == 0) {
         if (IsKeyPressed(KEY_ESCAPE)) { 
             break;

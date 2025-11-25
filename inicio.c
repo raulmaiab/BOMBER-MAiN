@@ -34,7 +34,6 @@ static void LinhasNeonFundo(int largura_tela, int altura_tela) {
 
 static void DesenharTextoBrilhante(Font fonte, const char* frase, Vector2 posicao_inicial, float tamanho_fonte, float espacamento, Color cor_base, Color cor_brilho) {
   const int deslocamento_brilho = 2;
-  
   //Desenha a sombra
   DrawTextEx(fonte, frase, (Vector2){ posicao_inicial.x - deslocamento_brilho, posicao_inicial.y }, tamanho_fonte, espacamento, cor_brilho);
   DrawTextEx(fonte, frase, (Vector2){ posicao_inicial.x + deslocamento_brilho, posicao_inicial.y }, tamanho_fonte, espacamento, cor_brilho);

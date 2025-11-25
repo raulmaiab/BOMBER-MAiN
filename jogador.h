@@ -7,16 +7,17 @@
 
 // --- Estados da IA ---
 typedef enum {
-    BOT_STATE_WANDERING, 
-    BOT_STATE_FLEEING,   
-    BOT_STATE_HOLDING    
-} BotState;
+    BOT_ESTADO_VAGANDO,    // BOT_STATE_WANDERING
+    BOT_ESTADO_FUGINDO,    // BOT_STATE_FLEEING
+    BOT_ESTADO_ESPERANDO   // BOT_STATE_HOLDING
+} EstadoBot;
 
 // --- Constantes ---
 #define NUM_FRAMES_ANDAR 3 
-#define ANIM_FRAME_SPEED 0.15f 
-#define MAX_SPRITE_NAME_LENGTH 16 // <<< NOVO: Definição do tamanho para o nome/cor
-typedef enum { DIR_CIMA=0, DIR_BAIXO, DIR_ESQUERDA, DIR_DIREITA, DIR_PARADO } AnimDirection;
+#define VELOCIDADE_FRAME_ANIMACAO 0.15f 
+#define COMPRIMENTO_MAX_NOME_SPRITE 16 
+
+typedef enum { DIR_CIMA=0, DIR_BAIXO, DIR_ESQUERDA, DIR_DIREITA, DIR_PARADO } DirecaoAnimacao;
 
 typedef struct Jogador
 {
@@ -29,45 +30,45 @@ typedef struct Jogador
     Texture2D texBaixo[NUM_FRAMES_ANDAR];
     Texture2D texEsquerda[NUM_FRAMES_ANDAR];
     Texture2D texDireita[NUM_FRAMES_ANDAR];
-    int currentFrame;           
-    float frameTimer;           
-    AnimDirection currentDir;   
+    int frameAtual;           
+    float temporizadorFrame;           
+    DirecaoAnimacao direcaoAtual;   
 
     bool vivo;         
     
-    char spriteName[MAX_SPRITE_NAME_LENGTH]; // <<< CAMPO CORRIGIDO: Nome do sprite/cor
+    char nomeSprite[COMPRIMENTO_MAX_NOME_SPRITE]; 
     
     // Variáveis do Bot
     bool ehBot;
-    BotState botState;      
-    float botStateTimer;    
-    int botMoveDirecao;     
-    Vector2 botLastBombPos; 
+    EstadoBot estadoBot;      
+    float temporizadorEstadoBot;    
+    int direcaoMovimentoBot;     
+    Vector2 ultimaPosicaoBombaBot; 
     
-    float bombaCooldown; 
+    float recargaBomba; 
     
     //Atributos de Power-ups (Extras) ---
-    int bombRange;          // Alcance da bomba (Começa em 1)
+    int alcanceBomba;          
     
-    bool temDefesa;         // Se tem escudo
-    float timerDefesa;      // Tempo restante do escudo
+    bool temDefesa;         
+    float temporizadorDefesa;      
     
-    bool temVelocidade;     // Se tem speed boost
-    float timerVelocidade;  // Tempo restante da velocidade
+    bool temVelocidade;     
+    float temporizadorVelocidade;  
 
-    int bombLimit;          // Limite de Bombas Simultaneas
-    int bombasAtivas;       // Bombas Ativas
+    int limiteBombas;          
+    int bombasAtivas;       
     // ---------------------------------------------
     
 } Jogador;
 
-// Assinaturas
+// Assinaturas (Traduzidas)
 Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot);
 
 // Atualizar recebe os alvos para a IA
-void AtualizarJogador(Jogador* j, int keyUp, int keyDown, int keyLeft, int keyRight, int keyBomb, 
+void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquerda, int teclaDireita, int teclaBomba, 
                       NodeBombas *gBombas, float deltaTime, 
-                      Jogador* targetHuman1, Jogador* targetHuman2);
+                      Jogador* alvoHumano1, Jogador* alvoHumano2);
 
 void DesenharJogador(const Jogador* j);
 void DestruirJogador(Jogador* j);

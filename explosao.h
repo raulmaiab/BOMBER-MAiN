@@ -12,13 +12,13 @@ struct Jogador;
 typedef struct {
     Vector2 pos;
     bool ativa;
-    int currentFrame;
-    float frameTimer;
+    int frameAtual;
+    float temporizadorFrame;
 } Explosao;
 
 typedef struct {
     Explosao explosoes[MAX_EXPLOSOES];
-    int quantidade;
+    int quantidade; // Usado para controle de slots (e não necessariamente o número exato de ativos)
     Texture2D texExplo1;
     Texture2D texExplo2;
 } NodeExplosoes;
@@ -30,11 +30,11 @@ void AtivarExplosao(NodeExplosoes *g, Vector2 pos);
 
 // --- NOVA FUNÇÃO PRINCIPAL ---
 // Gerencia a lógica: quebra blocos, spawna extras e mata jogadores
-void CriarExplosao(NodeExplosoes *g, Vector2 centro, int range, struct Jogador* jogadores[], int numJogadores);
+void CriarExplosao(NodeExplosoes *g, Vector2 centro, int alcance, struct Jogador* jogadores[], int numJogadores);
 // -----------------------------
 
 void AtualizarExplosoes(NodeExplosoes *g, float deltaTime);
 void DesenharExplosoes(const NodeExplosoes *g);
-void UnloadExplosoes(NodeExplosoes *g);
+void DescarregarExplosoes(NodeExplosoes *g);
 
 #endif // EXPLOSAO_H

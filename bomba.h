@@ -8,6 +8,7 @@
 #define MAX_BOMBAS_ATIVAS 20
 
 // Forward Declaration: Diz ao compilador que existe uma struct Jogador
+// Isso é necessário antes de includer o "jogador.h"
 struct Jogador;
 
 typedef struct Bomba 
@@ -16,8 +17,8 @@ typedef struct Bomba
     float tempoExplosao;      
     int raioExplosao;         
     bool ativa;               
-    int currentFrame;         
-    float frameTimer;
+    int frameAtual;         
+    float temporizadorFrame;
     struct Jogador *dono; // Ponteiro para o dono da bomba
     
 } Bomba;
