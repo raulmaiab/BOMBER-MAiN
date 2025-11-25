@@ -10,9 +10,8 @@ typedef enum {
 } StoryDifficulty;
 
 typedef struct {
-    //CORREÇÃO: Traduzido para português para corresponder aos arquivos .c
-    int numero_jogadores;     //1 ou 2
-    bool extras_habilitados;  //true/false
+    int numero_jogadores;    
+    bool extras_habilitados; 
     StoryDifficulty difficulty;
 } StorySettings;
 

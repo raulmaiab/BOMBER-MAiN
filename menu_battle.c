@@ -197,7 +197,7 @@ bool ExecutarMenuBattle(BattleSettings *configuracoes)
             }
             
             //Dica
-            const char* texto_dica = "Use UP/DOWN to navigate, LEFT/RIGHT to switch, ENTER to select";
+            const char* texto_dica = "Use CIMA/BAIXO para navegar, ESQUERDA/DIREITA para alterar, ENTER para selecionar";
             int largura_texto_dica = MeasureText(texto_dica, 20);
             DrawText(texto_dica, (largura_tela - largura_texto_dica) / 2, altura_tela - 40, 20, RAYWHITE);
         
