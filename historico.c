@@ -8,11 +8,11 @@
 #define NOME_ARQUIVO "historico.txt"
 
 // Função utilitária para obter a data e hora atual no formato string
-static void ObterDataHoraAtual(char *buffer, size_t bufferSize) {
+static void ObterDataHoraAtual(char *buffer, size_t tamanhoBuffer) {
     time_t t = time(NULL);
     struct tm *tm = localtime(&t);
     // Formato: YYYY-MM-DD HH:MM:SS
-    strftime(buffer, bufferSize, "%Y-%m-%d %H:%M:%S", tm);
+    strftime(buffer, tamanhoBuffer, "%Y-%m-%d %H:%M:%S", tm);
 }
 
 void AdicionarRegistroHistorico(RegistroBatalha registro) {
@@ -23,19 +23,19 @@ void AdicionarRegistroHistorico(RegistroBatalha registro) {
         // Em um projeto real, você registraria esse erro.
         printf("ERRO: Nao foi possivel abrir/criar o arquivo %s\n", NOME_ARQUIVO);
         return;
-    }
-    
-    // Obtém a data e hora atual
-    char dataHora[20];
-    ObterDataHoraAtual(dataHora, sizeof(dataHora));
-    
-    // Escreve o novo registro no formato "Data | Modo | Vencedor\n"
-    fprintf(arquivo, "%s | %s | %s\n", 
-            dataHora, 
-            registro.modo, 
-            registro.vencedor);
+    } else {
+        // Obtém a data e hora atual
+        char dataHora[25]; // Aumentado para acomodar o formato com segundos e terminador nulo
+        ObterDataHoraAtual(dataHora, sizeof(dataHora));
+        
+        // Escreve o novo registro no formato "Data | Modo | Vencedor\n"
+        fprintf(arquivo, "%s | %s | %s\n", 
+                dataHora, 
+                registro.modo, 
+                registro.vencedor);
 
-    // Fecha o arquivo
-    fclose(arquivo);
-    printf("Registro de batalha adicionado ao %s\n", NOME_ARQUIVO);
+        // Fecha o arquivo
+        fclose(arquivo);
+        printf("Registro de batalha adicionado ao %s\n", NOME_ARQUIVO);
+    }
 }

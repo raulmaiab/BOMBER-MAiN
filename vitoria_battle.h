@@ -1,14 +1,13 @@
-#ifndef VITORIA_BATTLE_H
-#define VITORIA_BATTLE_H
+#ifndef TELA_VITORIA_BATALHA_H
+#define TELA_VITORIA_BATALHA_H
 
 #include <stdbool.h> 
 
 /**
- * @brief Executa a tela de "You Won" para o modo Batalha.
- * @param winnerColor O nome da cor/sprite do jogador vencedor (ex: "Branco", "Preto").
- * @return Retorna 'true' se o jogador pressionar ENTER (para voltar ao menu), 
- * ou 'false' se fechar a janela ou pressionar ESC.
+ * @brief Executa a tela de "Você Venceu" para o modo Batalha (BATTLE).
+ * @param nomeSpriteVencedor O nome da cor/sprite do jogador vencedor (ex: "SpriteBranco").
+ * @return void (A função apenas executa a tela e retorna ao loop principal ao receber input).
  */
-void ExecutarTelaVitoriaBattle(const char* winnerColor);
+void ExecutarTelaVitoriaBattle(const char* nomeSpriteVencedor);
 
-#endif // VITORIA_BATTLE_H
+#endif // TELA_VITORIA_BATALHA_H

@@ -5,91 +5,102 @@
 #include <stdio.h>
 
 // Definições de cores baseadas no tema do menu (ajustadas para Raylib)
-#define COLOR_BUTTON_NORMAL CLITERAL(Color){ 150, 150, 150, 255 }  // Cinza claro para o texto normal
-#define COLOR_BUTTON_HOVER CLITERAL(Color){ 255, 255, 255, 255 }  // Branco para o texto em hover
-#define COLOR_SUCCESS GREEN
-#define COLOR_TITLE RAYWHITE 
-#define COLOR_BACKGROUND CLITERAL(Color){ 20, 20, 20, 255 } // Quase preto
+#define COR_BOTAO_NORMAL CLITERAL(Color){ 150, 150, 150, 255 }  // Cinza claro para o texto normal
+#define COR_BOTAO_HOVER CLITERAL(Color){ 255, 255, 255, 255 }  // Branco para o texto em hover
+#define COR_SUCESSO GREEN
+#define COR_TITULO RAYWHITE 
+#define COR_FUNDO CLITERAL(Color){ 20, 20, 20, 255 } // Quase preto
 
 // --- Lógica do Menu de Próximo Nível ---
-OptionsAction ExecutarMenuProximoNivel(NivelInfo info)
+AcaoOpcoes ExecutarMenuProximoNivel(InfoNivel info)
 {
-    OptionsAction acao = OPTIONS_ACAO_NENHUMA;
+    AcaoOpcoes acao = OPCOES_ACAO_NENHUMA;
     
     // Posição central do botão START
-    int btnX = GetScreenWidth() / 2;
-    int btnY = (GetScreenHeight() / 2) + 150; 
+    int xBotao = GetScreenWidth() / 2;
+    int yBotao = (GetScreenHeight() / 2) + 150; 
     
     // Texto do botão
-    const char* btnText = "START NEXT LEVEL (ENTER)";
-    int btnFontSize = 40; // Aumentei um pouco a fonte
-    int btnWidth = MeasureText(btnText, btnFontSize);
+    const char* textoBotao = "INICIAR PRÓXIMO NÍVEL (ENTER)";
+    int tamanhoFonteBotao = 40; 
+    int larguraBotao = MeasureText(textoBotao, tamanhoFonteBotao);
     
     // Área de colisão do botão (usada para hover e clique)
-    Rectangle btnBounds = { 
-        btnX - btnWidth / 2, 
-        btnY - btnFontSize / 2, 
-        btnWidth, 
-        btnFontSize 
+    Rectangle limitesBotao = { 
+        (float)xBotao - (float)larguraBotao / 2, 
+        (float)yBotao - (float)tamanhoFonteBotao / 2, 
+        (float)larguraBotao, 
+        (float)tamanhoFonteBotao 
     };
     
     // Textos informativos
     char nivelConcluido[64];
-    sprintf(nivelConcluido, "LEVEL %d: COMPLETED", info.nivelAtual + 1); 
+    sprintf(nivelConcluido, "NÍVEL %d: CONCLUÍDO", info.nivelAtual + 1); 
     
     char proximaFase[64];
-    sprintf(proximaFase, "NEXT STAGE: %s", info.proximoMapa);
+    sprintf(proximaFase, "PRÓXIMA FASE: %s", info.proximoMapa);
     
-    while (!WindowShouldClose())
+    // CORREÇÃO: !WindowShouldClose() -> WindowShouldClose() == 0
+    while (WindowShouldClose() == 0)
     {
-        Vector2 mousePoint = GetMousePosition();
-        bool mouseOverButton = CheckCollisionPointRec(mousePoint, btnBounds);
+        Vector2 pontoMouse = GetMousePosition();
+        bool mouseSobreBotao = CheckCollisionPointRec(pontoMouse, limitesBotao);
 
         // Verifica a entrada do usuário
         if (IsKeyPressed(KEY_ESCAPE)) {
-            acao = OPTIONS_ACAO_MAIN_MENU;
+            acao = OPCOES_ACAO_MENU_PRINCIPAL;
             break;
         }
 
         // --- DETECÇÃO DE BOTÃO (MOUSE OU ENTER) ---
-        if (IsKeyPressed(KEY_ENTER) || (mouseOverButton && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)))
+        if (IsKeyPressed(KEY_ENTER) || (mouseSobreBotao && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)))
         {
-            acao = OPTIONS_ACAO_RESTART; 
+            // Alterado para OPCOES_ACAO_NENHUMA para indicar a continuação do loop de história
+            acao = OPCOES_ACAO_NENHUMA; 
             break;
         }
         // ------------------------------------------
 
         BeginDrawing();
-            ClearBackground(COLOR_BACKGROUND);
+        {
+            ClearBackground(COR_FUNDO);
             
             // Título de Sucesso
-            DrawText("YOU WON", 
-                     (GetScreenWidth() / 2) - MeasureText("YOU WON", 80) / 2, 
+            DrawText("VOCÊ VENCEU", 
+                     (GetScreenWidth() / 2) - MeasureText("VOCÊ VENCEU", 80) / 2, 
                      100, 
                      80, 
-                     COLOR_SUCCESS);
+                     COR_SUCESSO);
 
             // Nível Concluído
             DrawText(nivelConcluido, 
                      (GetScreenWidth() / 2) - MeasureText(nivelConcluido, 35) / 2, 
                      280, 
                      35, 
-                     COLOR_TITLE);
+                     COR_TITULO);
 
             // Próxima Fase
             DrawText(proximaFase, 
                      (GetScreenWidth() / 2) - MeasureText(proximaFase, 50) / 2, 
                      350, 
                      50, 
-                     COLOR_TITLE);
+                     COR_TITULO);
 
             // Desenho do Botão START (agora apenas texto com mudança de cor)
-            DrawText(btnText,
-                     (btnX - btnWidth / 2),
-                     (btnY - btnFontSize / 2),
-                     btnFontSize,
-                     mouseOverButton ? COLOR_BUTTON_HOVER : COLOR_BUTTON_NORMAL);
-
+            // CORREÇÃO: Uso de if/else para a cor do botão
+            Color corTextoBotao;
+            if (mouseSobreBotao) {
+                corTextoBotao = COR_BOTAO_HOVER;
+            } else {
+                corTextoBotao = COR_BOTAO_NORMAL;
+            }
+            
+            DrawText(textoBotao,
+                     (int)(xBotao - larguraBotao / 2),
+                     (int)(yBotao - tamanhoFonteBotao / 2),
+                     tamanhoFonteBotao,
+                     corTextoBotao);
+        }
         EndDrawing();
     }
     

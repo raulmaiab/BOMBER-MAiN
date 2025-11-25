@@ -1,5 +1,5 @@
-#ifndef DERROTA_H
-#define DERROTA_H
+#ifndef TELA_DERROTA_H
+#define TELA_DERROTA_H
 
 #include <stdbool.h> 
 
@@ -10,4 +10,4 @@
  */
 bool ExecutarTelaDerrota(void);
 
-#endif // DERROTA_H
+#endif // TELA_DERROTA_H

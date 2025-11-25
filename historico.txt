@@ -10,3 +10,8 @@
 2025-11-20 18:52:37 | Battle (2P) | Player 2 (Preto) - PvP Vitoria
 2025-11-20 18:57:21 | Battle (2P) | Player 2 (Preto) - PvP Vitoria
 2025-11-20 19:03:50 | Battle (2P) | Player 2 (Preto) - PvP Vitoria
+2025-11-25 17:14:51 | Story Nivel 1 (1P) | Player 1 (Branco)
+2025-11-25 17:15:16 | Story Nivel 2 (1P) | Player 1 (Branco)
+2025-11-25 17:15:23 | Story Nivel 3 (1P) | Player 1 (Branco)
+2025-11-25 18:55:13 | Battle (1P) | Player 1 (Branco)
+2025-11-25 18:55:22 | Battle (1P) | Player 1 (Branco)

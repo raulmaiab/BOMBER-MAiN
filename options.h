@@ -1,18 +1,18 @@
 // options.h
-#ifndef OPTIONS_H
-#define OPTIONS_H
+#ifndef OPCOES_H
+#define OPCOES_H
 
 #include "raylib.h"
 #include <stdbool.h>
 
-// --- Ações que o menu de Options pode retornar ---
+// --- Ações que o menu de Opções pode retornar ---
 typedef enum {
-    OPTIONS_ACAO_RESUME,    // Voltar para a partida atual (Resume)
-    OPTIONS_ACAO_RESTART,   // Reiniciar a partida atual (Restart)
-    OPTIONS_ACAO_EDIT_GAME, // Voltar ao Menu Battle/Story para reconfigurar
-    OPTIONS_ACAO_MAIN_MENU, // Voltar ao Menu Principal
-    OPTIONS_ACAO_NENHUMA    // Não houve escolha (ex: se o usuário fechar a janela)
-} OptionsAction;
+    OPCOES_ACAO_RESUMO,     // Voltar para a partida atual (Resume)
+    OPCOES_ACAO_REINICIAR,  // Reiniciar a partida atual (Restart)
+    OPCOES_ACAO_EDITAR_JOGO, // Voltar ao Menu Battle/Story para reconfigurar
+    OPCOES_ACAO_MENU_PRINCIPAL, // Voltar ao Menu Principal
+    OPCOES_ACAO_NENHUMA     // Não houve escolha (ex: se o usuário fechar a janela)
+} AcaoOpcoes;
 
 /**
  * @brief Exibe o menu de opções (Options) durante a partida (popup).
@@ -22,6 +22,6 @@ typedef enum {
  *
  * @return Retorna a ação escolhida pelo jogador.
  */
-OptionsAction ExecutarMenuOptions(void);
+AcaoOpcoes ExecutarMenuOpcoes(void);
 
-#endif // OPTIONS_H
+#endif // OPCOES_H

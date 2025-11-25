@@ -4,49 +4,52 @@
 #include <math.h> 
 #include <string.h>
 
-// --- Função de Desenho de Texto (Glow) - Copiada dos menus principais ---
-// Assumindo que você não refatorou para um menu_ui.c, repetimos aqui.
-static void DrawTextGlow(const char* text, Vector2 pos, float size, Color base, Color glow) {
-    const int o = 2; // Offset do glow
-    DrawText(text, pos.x - o, pos.y, size, glow);
-    DrawText(text, pos.x + o, pos.y, size, glow);
-    DrawText(text, pos.x, pos.y - o, size, glow);
-    DrawText(text, pos.x, pos.y + o, size, glow);
-    DrawText(text, pos.x, pos.y, size, base);
+// Definições de Cores (Assumindo que estão definidas em menu.h)
+// #define COLOR_UI_BACKGROUND (Color){ 30, 30, 50, 255 } 
+// #define COLOR_BLUE_HIGHLIGHT (Color){ 0, 150, 255, 255 }
+// #define COLOR_YELLOW_HIGHLIGHT (Color){ 255, 200, 0, 255 }
+// #define COLOR_GRAY_OPTION (Color){ 180, 180, 180, 255 }
+
+// --- Função de Desenho de Texto (Brilho) - Traduzida ---
+static void DesenharTextoBrilho(const char* texto, Vector2 pos, float tamanho, Color base, Color brilho) {
+    const int o = 2; // Offset do brilho
+    DrawText(texto, (int)(pos.x - o), (int)pos.y, (int)tamanho, brilho);
+    DrawText(texto, (int)(pos.x + o), (int)pos.y, (int)tamanho, brilho);
+    DrawText(texto, (int)pos.x, (int)(pos.y - o), (int)tamanho, brilho);
+    DrawText(texto, (int)pos.x, (int)(pos.y + o), (int)tamanho, brilho);
+    DrawText(texto, (int)pos.x, (int)pos.y, (int)tamanho, base);
 }
 
-// --- Estrutura e Dados do Menu Options ---
+// --- Estrutura e Dados do Menu Opções ---
 typedef struct {
     const char* texto;
-    OptionsAction idOpcao;
-} OptionsItem;
+    AcaoOpcoes idOpcao;
+} ItemOpcoes;
 
-OptionsAction ExecutarMenuOptions(void)
+AcaoOpcoes ExecutarMenuOpcoes(void)
 {
-    OptionsItem opcoes[] = {
-        {"RESUME", OPTIONS_ACAO_RESUME},
-        {"RESTART", OPTIONS_ACAO_RESTART},
-        {"MAIN MENU", OPTIONS_ACAO_MAIN_MENU},
+    ItemOpcoes opcoes[] = {
+        {"RETOMAR", OPCOES_ACAO_RESUMO},
+        {"REINICIAR", OPCOES_ACAO_REINICIAR},
+        {"EDITAR JOGO", OPCOES_ACAO_EDITAR_JOGO}, // Adicionada opção que existe no .h
+        {"MENU PRINCIPAL", OPCOES_ACAO_MENU_PRINCIPAL},
     };
     int totalOpcoes = sizeof(opcoes) / sizeof(opcoes[0]);
     int indiceOpcaoAtual = 0; 
     
     // --- Configurações Visuais do Popup ---
-    const int sw = GetScreenWidth();
-    const int sh = GetScreenHeight();
-    const int popupWidth = 600;
-    const int popupHeight = 450;
-    const int popupX = (sw - popupWidth) / 2;
-    const int popupY = (sh - popupHeight) / 2;
-    const float titleSize = 50;
-    const float fontSizeOpcao = 35;
+    const int larguraTela = GetScreenWidth();
+    const int alturaTela = GetScreenHeight();
+    const int larguraPopup = 600;
+    const int alturaPopup = 450;
+    const int xPopup = (larguraTela - larguraPopup) / 2;
+    const int yPopup = (alturaTela - alturaPopup) / 2;
+    const float tamanhoTitulo = 50;
+    const float tamanhoFonteOpcao = 35;
     const float espacamento = 50;
-
-    // A partida já deve estar renderizada (desenhada) antes de chamar esta função, 
-    // mas o loop de desenho precisa ser reaberto.
-    // Lembrete: O BeginDrawing/EndDrawing precisa englobar toda a lógica do menu.
     
-    while (!WindowShouldClose())
+    // CORREÇÃO: !WindowShouldClose() -> WindowShouldClose() == 0
+    while (WindowShouldClose() == 0)
     {
         // 1. Atualizar (Lógica / Input)
         if (IsKeyPressed(KEY_DOWN)) {
@@ -60,64 +63,81 @@ OptionsAction ExecutarMenuOptions(void)
             return opcoes[indiceOpcaoAtual].idOpcao; 
         }
         
-        // ESC age como um "Resume" rápido, mas só se RESUME for o item selecionado
-        // ou se for a primeira opção (para conveniência).
+        // ESC age como um "Resume" rápido, retornando a ação de Resumo.
         if (IsKeyPressed(KEY_ESCAPE)) {
-            return OPTIONS_ACAO_RESUME;
+            return OPCOES_ACAO_RESUMO;
         }
         
         // 2. Desenhar
         BeginDrawing();
-        
+        {
             // 2a. Fundo: Desenha um overlay cinza escuro sobre a partida já desenhada.
-            // O mapa e jogadores permanecem visíveis, mas escurecidos/pausados.
-            DrawRectangle(0, 0, sw, sh, Fade(BLACK, 0.7f)); 
+            DrawRectangle(0, 0, larguraTela, alturaTela, Fade(BLACK, 0.7f)); 
             
             // 2b. Popup: Caixa de fundo
-            DrawRectangle(popupX, popupY, popupWidth, popupHeight, COLOR_UI_BACKGROUND);
-            DrawRectangleLinesEx((Rectangle){popupX, popupY, popupWidth, popupHeight}, 5, COLOR_BLUE_HIGHLIGHT);
+            // Assumindo COLOR_UI_BACKGROUND e COLOR_BLUE_HIGHLIGHT definidas em menu.h
+            DrawRectangle(xPopup, yPopup, larguraPopup, alturaPopup, COLOR_UI_BACKGROUND);
+            DrawRectangleLinesEx((Rectangle){(float)xPopup, (float)yPopup, (float)larguraPopup, (float)alturaPopup}, 5, COLOR_BLUE_HIGHLIGHT);
             
-            // Título "OPTIONS"
-            const char* titleText = "OPTIONS";
-            float titleX = popupX + (popupWidth - MeasureText(titleText, titleSize)) / 2;
-            DrawTextGlow(titleText, (Vector2){ titleX, popupY + 40 }, titleSize, 
-                         RAYWHITE, COLOR_BLUE_HIGHLIGHT);
+            // Título "OPÇÕES"
+            const char* textoTitulo = "OPÇÕES";
+            float xTitulo = xPopup + (larguraPopup - MeasureText(textoTitulo, tamanhoTitulo)) / 2;
+            DesenharTextoBrilho(textoTitulo, (Vector2){ xTitulo, (float)yPopup + 40 }, tamanhoTitulo, 
+                                 RAYWHITE, COLOR_BLUE_HIGHLIGHT);
 
             // Opções do Menu
-            float menuY_inicial = popupY + 130;
+            float yMenu_inicial = (float)yPopup + 130;
 
             for (int i = 0; i < totalOpcoes; i++)
             {
                 const char* texto = opcoes[i].texto;
-                float posX = popupX + (popupWidth - MeasureText(texto, fontSizeOpcao)) / 2;
-                float posY = menuY_inicial + (i * espacamento);
+                float xPos = xPopup + (larguraPopup - MeasureText(texto, tamanhoFonteOpcao)) / 2;
+                float yPos = yMenu_inicial + (i * espacamento);
                 
                 if (i == indiceOpcaoAtual)
                 {
-                    bool piscar = fmod(GetTime(), 0.2) > 0.1;
-                    Color corBase = piscar ? COLOR_YELLOW_HIGHLIGHT : WHITE;
-                    Color corGlow = piscar ? (Color){200, 160, 0, 150} : COLOR_BLUE_HIGHLIGHT;
+                    bool piscar;
+                    // CORREÇÃO: fmod(GetTime(), 0.2) > 0.1 ? true : false
+                    if (fmod(GetTime(), 0.2) > 0.1) {
+                        piscar = true;
+                    } else {
+                        piscar = false;
+                    }
                     
-                    DrawTextGlow(texto, (Vector2){ posX, posY }, fontSizeOpcao, corBase, corGlow);
+                    // Assumindo COLOR_YELLOW_HIGHLIGHT e COLOR_BLUE_HIGHLIGHT definidas
+                    Color corBase;
+                    Color corGlow;
+
+                    if (piscar) {
+                        corBase = COLOR_YELLOW_HIGHLIGHT;
+                        corGlow = (Color){200, 160, 0, 150};
+                    } else {
+                        corBase = WHITE;
+                        corGlow = COLOR_BLUE_HIGHLIGHT;
+                    }
+
+                    
+                    DesenharTextoBrilho(texto, (Vector2){ xPos, yPos }, tamanhoFonteOpcao, corBase, corGlow);
                     
                     // Desenha setas ao lado do item selecionado
-                    float setaSize = 15;
-                    DrawText(">", posX - setaSize*2.0f, posY + (fontSizeOpcao - setaSize)/2.0f + 5, setaSize, corBase);
-                    DrawText("<", posX + MeasureText(texto, fontSizeOpcao) + setaSize, posY + (fontSizeOpcao - setaSize)/2.0f + 5, setaSize, corBase);
+                    float tamanhoSeta = 15;
+                    DrawText(">", (int)(xPos - tamanhoSeta*2.0f), (int)(yPos + (tamanhoFonteOpcao - tamanhoSeta)/2.0f + 5), (int)tamanhoSeta, corBase);
+                    DrawText("<", (int)(xPos + MeasureText(texto, tamanhoFonteOpcao) + tamanhoSeta), (int)(yPos + (tamanhoFonteOpcao - tamanhoSeta)/2.0f + 5), (int)tamanhoSeta, corBase);
                 }
                 else
                 {
-                    DrawTextGlow(texto, (Vector2){ posX, posY }, fontSizeOpcao, 
+                    // Assumindo COLOR_GRAY_OPTION definida
+                    DesenharTextoBrilho(texto, (Vector2){ xPos, yPos }, tamanhoFonteOpcao, 
                                  COLOR_GRAY_OPTION, (Color){50,50,50,100});
                 }
             }
             
             // Ajuda inferior
-            DrawText("Press ESC or RESUME to continue game", 
-                     popupX + 20, popupY + popupHeight - 30, 18, RAYWHITE);
-
+            DrawText("Pressione ESC ou RETOMAR para continuar o jogo", 
+                     xPopup + 20, yPopup + alturaPopup - 30, 18, RAYWHITE);
+        }
         EndDrawing();
     }
     
-    return OPTIONS_ACAO_NENHUMA;
+    return OPCOES_ACAO_NENHUMA;
 }
