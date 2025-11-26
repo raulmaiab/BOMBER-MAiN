@@ -66,22 +66,45 @@ static bool ExisteBombaEm(NodeBombas *gBombas, int gradeX, int gradeY) {
 static bool EstaNoCanto(int x, int y) {
     int L = LARGURA_GRADE_MAPA;
     int A = ALTURA_GRADE_MAPA;
+    //Canto Superior Esquerdo
     if ((x == 1 && y == 1) || (x == 2 && y == 1) || (x == 1 && y == 2)) {
         return true;
     }
+    //Canto Superior Direito
     if ((x == L-2 && y == 1) || (x == L-3 && y == 1) || (x == L-2 && y == 2)) {
         return true;
     }
+    //Canto Inferior Esquerdo
     if ((x == 1 && y == A-2) || (x == 2 && y == A-2) || (x == 1 && y == A-3)) {
         return true;
     }
+    //Canto Inferior Direito
     if ((x == L-2 && y == A-2) || (x == L-3 && y == A-2) || (x == L-2 && y == A-3)) {
         return true;
     }
     return false;
 }
 
-//Verifica se é seguro
+static bool TemDestrutivelNoCaminho(int inicioX, int inicioY, int alvoX, int alvoY) {
+    if (inicioX != alvoX && inicioY != alvoY) return false; //Deve ser na mesma linha ou coluna
+
+    if (inicioY == alvoY) { // Movimento horizontal
+        int passo = (alvoX > inicioX) ? 1 : -1;
+        for (int x = inicioX + passo; x != alvoX; x += passo) {
+            if (ObterTipoTile(x, inicioY) == TILE_DESTRUTIVEL) return true;
+            if (ObterTipoTile(x, inicioY) == TILE_INDESTRUTIVEL) return false; //Pare se houver bloco indestrutível
+        }
+    } else { // Movimento vertical
+        int passo = (alvoY > inicioY) ? 1 : -1;
+        for (int y = inicioY + passo; y != alvoY; y += passo) {
+            if (ObterTipoTile(inicioX, y) == TILE_DESTRUTIVEL) return true;
+            if (ObterTipoTile(inicioX, y) == TILE_INDESTRUTIVEL) return false; //Pare se houver bloco indestrutível
+        }
+    }
+    return false;
+}
+
+//Verifica se é seguro (só anda se o próximo for TILE_VAZIO e não tiver bomba)
 static bool DirecaoEhSegura(int inicioX, int inicioY, int dir, NodeBombas *gBombas) {
     int dx = 0, dy = 0;
     if (dir == 0) {
@@ -108,6 +131,7 @@ static bool DirecaoEhSegura(int inicioX, int inicioY, int dir, NodeBombas *gBomb
     }
     return true;
 }
+
 static bool DirecaoEhAndavel(int inicioX, int inicioY, int dir) {
     int dx = 0, dy = 0;
     if (dir == 0) {
@@ -254,7 +278,7 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
         j.direcaoMovimentoBot = 4; 
     }
     j.ultimaPosicaoBombaBot = (Vector2){0,0};
-    j.recargaBomba = 0.0f; 
+    j.recargaBomba = 0.0f; //Inicialmente sem cooldown para bots
 
     j.alcanceBomba = 1;
     j.temDefesa = false; j.temporizadorDefesa = 0.0f;
@@ -289,6 +313,7 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
 
     float velocidadeAtual = j->velocidade * multiplicadorVelocidade; 
 
+    //O cooldown ainda decrementa
     if (j->recargaBomba > 0.0f) { 
         j->recargaBomba -= deltaTime; 
     }
@@ -305,73 +330,105 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
             case BOT_ESTADO_VAGANDO:
             {
                 bool plantouBomba = false;
+                Vector2 minhaPosGrade = ObterPosGradeDePixels(j->pos);
+                int gradeX = (int)minhaPosGrade.x;
+                int gradeY = (int)minhaPosGrade.y;
 
-                if (j->recargaBomba <= 0.0f) 
+                if (EstaNoCanto(gradeX, gradeY) == true) {
+                    goto MoverNormalBot; 
+                }
+
+                Vector2 alvoPosGrade = {0, 0};
+                Jogador* alvo = NULL;
+                float raioAtaque = TAMANHO_TILE * 6;
+
                 {
-                    Vector2 minhaPosGrade = ObterPosGradeDePixels(j->pos);
-                    int gradeX = (int)minhaPosGrade.x;
-                    int gradeY = (int)minhaPosGrade.y;
-
-                    if (EstaNoCanto(gradeX, gradeY) == false)
-                    {
-                        bool gatilhoAcionado = false;
-                        //Colocar bomba em wallb.png
-                        if (ObterTipoTile(gradeX, gradeY - 1) == TILE_DESTRUTIVEL || 
-                            ObterTipoTile(gradeX, gradeY + 1) == TILE_DESTRUTIVEL ||
-                            ObterTipoTile(gradeX - 1, gradeY) == TILE_DESTRUTIVEL || 
-                            ObterTipoTile(gradeX + 1, gradeY) == TILE_DESTRUTIVEL) {
-                            gatilhoAcionado = true;
+                    if (alvoHumano1 != NULL && alvoHumano1->vivo && Vector2Distance(j->pos, alvoHumano1->pos) < raioAtaque) {
+                        alvo = alvoHumano1;
+                    }
+                    if (alvoHumano2 != NULL && alvoHumano2->vivo && Vector2Distance(j->pos, alvoHumano2->pos) < raioAtaque) {
+                        if (alvo == NULL || Vector2Distance(j->pos, alvoHumano2->pos) < Vector2Distance(j->pos, alvo->pos)) {
+                            alvo = alvoHumano2;
                         }
+                    }
 
-                        if (gatilhoAcionado == true)
-                        {
-                            int direcaoFuga = -1;
-                            int oposta = -1;
-                            if (j->direcaoMovimentoBot == 0) {
-                                oposta = 1;      
-                            } else if (j->direcaoMovimentoBot == 1) {
-                                oposta = 0; 
-                            } else if (j->direcaoMovimentoBot == 2) {
-                                oposta = 3; 
-                            } else if (j->direcaoMovimentoBot == 3) {
-                                oposta = 2; 
-                            }
+                    if (alvo != NULL) {
+                        alvoPosGrade = ObterPosGradeDePixels(alvo->pos);
+                        int alvoX = (int)alvoPosGrade.x;
+                        int alvoY = (int)alvoPosGrade.y;
 
-                            //DirecaoEhSegura para PLANEJAR o movimento (considera bombas)
-                            if (oposta != -1 && DirecaoEhSegura(gradeX, gradeY, oposta, gBombas) == true) {
-                                direcaoFuga = oposta;
-                            }
-                            else {
-                                if (DirecaoEhSegura(gradeX, gradeY, j->direcaoMovimentoBot, gBombas) == true) {
-                                    direcaoFuga = j->direcaoMovimentoBot;
-                                } else if (DirecaoEhSegura(gradeX, gradeY, 0, gBombas) == true) {
-                                    direcaoFuga = 0;
-                                } else if (DirecaoEhSegura(gradeX, gradeY, 1, gBombas) == true) {
-                                    direcaoFuga = 1;
-                                } else if (DirecaoEhSegura(gradeX, gradeY, 2, gBombas) == true) {
-                                    direcaoFuga = 2;
-                                } else if (DirecaoEhSegura(gradeX, gradeY, 3, gBombas) == true) {
-                                    direcaoFuga = 3;
-                                }
-                            }
-
-                            if (direcaoFuga != -1) 
-                            {
+                        if ((gradeX == alvoX && abs(gradeY - alvoY) > 0) || (gradeY == alvoY && abs(gradeX - alvoX) > 0)) {
+                            if (TemDestrutivelNoCaminho(gradeX, gradeY, alvoX, alvoY) == false) {
+                                
                                 AlinharEPlantarBomba(j, gBombas); 
-                                j->recargaBomba = TEMPO_RECARGA_BOMBA;
+                                j->recargaBomba = 0.0f;
                                 j->estadoBot = BOT_ESTADO_FUGINDO;
-                                j->direcaoMovimentoBot = direcaoFuga; 
                                 j->ultimaPosicaoBombaBot = (Vector2){ (float)gradeX * TAMANHO_TILE, (float)gradeY * TAMANHO_TILE };
                                 
-                                AlinharNaGrade(j, direcaoFuga); 
-                                plantouBomba = true;
-                                acabouDePlantar = true; 
+                                int direcaoInicial = -1;
+                                if (gradeX == alvoX) {
+                                    direcaoInicial = (gradeY < alvoY) ? 0 : 1; 
+                                } else { 
+                                    direcaoInicial = (gradeX < alvoX) ? 2 : 3; 
+                                }
+                                
+                                int direcaoFuga = -1; 
+                                if (DirecaoEhSegura(gradeX, gradeY, direcaoInicial, gBombas)) {
+                                    direcaoFuga = direcaoInicial;
+                                }
+
+                                if (direcaoFuga != -1) {
+                                    j->direcaoMovimentoBot = direcaoFuga; 
+                                    AlinharNaGrade(j, direcaoFuga); 
+                                    plantouBomba = true;
+                                    acabouDePlantar = true; 
+                                }
                             }
                         }
                     }
                 }
+                
+                if (plantouBomba == false)
+                {
+                    bool gatilhoAcionado = false;
+                    
+                    int direcaoParaDestrutivel = -1;
+                    if (ObterTipoTile(gradeX, gradeY - 1) == TILE_DESTRUTIVEL) { direcaoParaDestrutivel = 0; gatilhoAcionado = true; }
+                    else if (ObterTipoTile(gradeX, gradeY + 1) == TILE_DESTRUTIVEL) { direcaoParaDestrutivel = 1; gatilhoAcionado = true; }
+                    else if (ObterTipoTile(gradeX - 1, gradeY) == TILE_DESTRUTIVEL) { direcaoParaDestrutivel = 2; gatilhoAcionado = true; }
+                    else if (ObterTipoTile(gradeX + 1, gradeY) == TILE_DESTRUTIVEL) { direcaoParaDestrutivel = 3; gatilhoAcionado = true; }
+                    
 
-                //Movimento Normal
+                    if (gatilhoAcionado == true)
+                    {
+                        int oposta = -1;
+                        
+                        if (direcaoParaDestrutivel == 0) { oposta = 1; }
+                        else if (direcaoParaDestrutivel == 1) { oposta = 0; }
+                        else if (direcaoParaDestrutivel == 2) { oposta = 3; }
+                        else if (direcaoParaDestrutivel == 3) { oposta = 2; }
+                        
+                        int direcaoFuga = -1;
+                        if (oposta != -1 && DirecaoEhSegura(gradeX, gradeY, oposta, gBombas) == true) {
+                            direcaoFuga = oposta;
+                        }
+
+                        if (direcaoFuga != -1) 
+                        {
+                            AlinharEPlantarBomba(j, gBombas); 
+                            j->recargaBomba = 0.0f;
+                            j->estadoBot = BOT_ESTADO_FUGINDO;
+                            j->direcaoMovimentoBot = direcaoFuga; 
+                            j->ultimaPosicaoBombaBot = (Vector2){ (float)gradeX * TAMANHO_TILE, (float)gradeY * TAMANHO_TILE };
+                            
+                            AlinharNaGrade(j, direcaoFuga); 
+                            plantouBomba = true;
+                            acabouDePlantar = true; 
+                        }
+                    }
+                }
+
+                MoverNormalBot:;
                 if (plantouBomba == false && j->temporizadorEstadoBot <= 0.0f)
                 {
                     int direcaoMover = -1;
@@ -380,21 +437,21 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
                     int gy = (int)minhaPosGrade.y;
 
                     Vector2 posItem;
-                    if (ObterExtraMaisProximo(j->pos, TAMANHO_TILE * 6, &posItem) == true) {
+                    if (ObterExtraMaisProximo(j->pos, TAMANHO_TILE * 8, &posItem) == true) { 
                         float dx = posItem.x - j->pos.x;
-                        float dy = posItem.y - j->pos.y;
-                        int pH;
+                        float dy = posItem.y - posItem.y;
+                        int pH = -1; 
                         if (dx > 0) {
-                            pH = 3;
+                            pH = 3; 
                         } else {
-                            pH = 2;
+                            pH = 2; 
                         }
-                        int pV;
+                        int pV = -1;
                         if (dy > 0) {
-                            pV = 1;
+                            pV = 1; 
                         } else {
-                            pV = 0;
-                        }
+                            pV = 0; 
+                        } 
                         
                         if (fabs(dx) > fabs(dy)) {
                             if (DirecaoEhSegura(gx, gy, pH, gBombas) == true) {
@@ -409,24 +466,19 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
                                 direcaoMover = pH;
                             }
                         }
-                        j->temporizadorEstadoBot = 0.2f;
+                        
+                        if (direcaoMover != -1) {
+                            j->temporizadorEstadoBot = 0.2f; 
+                        }
                     }
 
                     if (direcaoMover == -1) {
                         int direcoesValidas[4];
                         int contagem = 0;
-                        if (DirecaoEhSegura(gx, gy, 0, gBombas) == true) {
-                            direcoesValidas[contagem++] = 0;
-                        }
-                        if (DirecaoEhSegura(gx, gy, 1, gBombas) == true) {
-                            direcoesValidas[contagem++] = 1;
-                        }
-                        if (DirecaoEhSegura(gx, gy, 2, gBombas) == true) {
-                            direcoesValidas[contagem++] = 2;
-                        }
-                        if (DirecaoEhSegura(gx, gy, 3, gBombas) == true) {
-                            direcoesValidas[contagem++] = 3;
-                        }
+                        if (DirecaoEhSegura(gx, gy, 0, gBombas) == true) { direcoesValidas[contagem++] = 0; }
+                        if (DirecaoEhSegura(gx, gy, 1, gBombas) == true) { direcoesValidas[contagem++] = 1; }
+                        if (DirecaoEhSegura(gx, gy, 2, gBombas) == true) { direcoesValidas[contagem++] = 2; }
+                        if (DirecaoEhSegura(gx, gy, 3, gBombas) == true) { direcoesValidas[contagem++] = 3; }
 
                         if (contagem > 0) {
                             if (j->direcaoMovimentoBot >= 0 && j->direcaoMovimentoBot <= 3 && 
@@ -443,7 +495,7 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
                         }
                     }
 
-                    if (direcaoMover != -1) {
+                    if (direcaoMover != -1 && direcaoMover != 4) {
                         bool mudouEixo = (j->direcaoMovimentoBot >= 2 && direcaoMover <= 1) || (j->direcaoMovimentoBot <= 1 && direcaoMover >= 2);
                         if (mudouEixo == true) {
                             AlinharNaGrade(j, direcaoMover);
@@ -454,66 +506,66 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
                 break; 
             }
             
-            //FUGINDO (fuga com tentativa de sobrevivência a bomba)
             case BOT_ESTADO_FUGINDO:
             {
                 Vector2 minhaPosGrade = ObterPosGradeDePixels(j->pos);
                 Vector2 posGradeBomba = ObterPosGradeDePixels(j->ultimaPosicaoBombaBot);
                 
-                int distanciaAlvo = j->alcanceBomba + 3; 
-                int distanciaAtual = abs((int)minhaPosGrade.x - (int)posGradeBomba.x) + abs((int)minhaPosGrade.y - (int)posGradeBomba.y);
+                //Range da explosão + 4
+                int distanciaRequerida = j->alcanceBomba + 4; 
+                
+                int distX = abs((int)minhaPosGrade.x - (int)posGradeBomba.x);
+                int distY = abs((int)minhaPosGrade.y - (int)posGradeBomba.y);
+                
+                int distAtual;
+                if (j->direcaoMovimentoBot == 0 || j->direcaoMovimentoBot == 1) {
+                    distAtual = distY;
+                } else { 
+                    distAtual = distX;
+                }
 
-                if (distanciaAtual >= distanciaAlvo) {
+                if (distAtual >= distanciaRequerida) {
                     j->estadoBot = BOT_ESTADO_ESPERANDO;
-                    j->temporizadorEstadoBot = TEMPO_RECARGA_BOMBA - 0.5f; 
+                    j->temporizadorEstadoBot = 0.1f; 
                     j->direcaoMovimentoBot = 4; 
                 }
-                //Pânico
                 else if (acabouDePlantar == false && Vector2Distance(posAntes, j->pos) < 0.05f) 
                 {
-                    if (distanciaAtual >= 1) {
-                        j->estadoBot = BOT_ESTADO_ESPERANDO;
-                        j->temporizadorEstadoBot = TEMPO_RECARGA_BOMBA - 0.5f;
-                        j->direcaoMovimentoBot = 4; 
-                    } else {
-                        //Se travou no meio da fuga, usa DirecaoEhAndavel
-                        
-                        int gx = (int)minhaPosGrade.x;
-                        int gy = (int)minhaPosGrade.y;
-                        int novaDir = -1;
-                        
-                        //Tenta direção perpendicular primeiro
-                        if (j->direcaoMovimentoBot <= 1) { //Vertical
-                            if (DirecaoEhAndavel(gx, gy, 2) == true) {
-                                novaDir = 2;
-                            } else if (DirecaoEhAndavel(gx, gy, 3) == true) {
-                                novaDir = 3;
-                            }
-                        } else { //Horizontal
-                            if (DirecaoEhAndavel(gx, gy, 0) == true) {
-                                novaDir = 0;
-                            } else if (DirecaoEhAndavel(gx, gy, 1) == true) {
-                                novaDir = 1;
-                            }
-                        }
-                        
-                        // e não achou perpendicular, tenta qualquer uma
-                        if (novaDir == -1) {
-                            if (DirecaoEhAndavel(gx, gy, 0) == true && j->direcaoMovimentoBot != 1) {
-                                novaDir = 0;
-                            } else if (DirecaoEhAndavel(gx, gy, 1) == true && j->direcaoMovimentoBot != 0) {
-                                novaDir = 1;
-                            } else if (DirecaoEhAndavel(gx, gy, 2) == true && j->direcaoMovimentoBot != 3) {
-                                novaDir = 2;
-                            } else if (DirecaoEhAndavel(gx, gy, 3) == true && j->direcaoMovimentoBot != 2) {
-                                novaDir = 3;
-                            }
-                        }
+                    int gx = (int)minhaPosGrade.x;
+                    int gy = (int)minhaPosGrade.y;
+                    int novaDir = -1;
+                    int direcaoAtual = j->direcaoMovimentoBot;
 
-                        if (novaDir != -1) {
-                            j->direcaoMovimentoBot = novaDir;
-                            AlinharNaGrade(j, novaDir);
+                    // Tenta direção perpendicular (mantendo a regra de andar 1 direção por vez)
+                    if (direcaoAtual <= 1) { 
+                        if (DirecaoEhAndavel(gx, gy, 2) == true) { novaDir = 2; } 
+                        else if (DirecaoEhAndavel(gx, gy, 3) == true) { novaDir = 3; }
+                    } else {
+                        if (DirecaoEhAndavel(gx, gy, 0) == true) { novaDir = 0; } 
+                        else if (DirecaoEhAndavel(gx, gy, 1) == true) { novaDir = 1; }
+                    }
+                    
+                    //Se não achou perpendicular, tenta a oposta da direção que falhou
+                    if (novaDir == -1) {
+                        int oposta = -1;
+                        if (direcaoAtual == 0) oposta = 1;
+                        else if (direcaoAtual == 1) oposta = 0;
+                        else if (direcaoAtual == 2) oposta = 3;
+                        else if (direcaoAtual == 3) oposta = 2;
+                        
+                        if (oposta != -1 && DirecaoEhAndavel(gx, gy, oposta) == true) {
+                            novaDir = oposta;
                         }
+                    }
+                    
+                    if (novaDir != -1) {
+                        j->direcaoMovimentoBot = novaDir;
+                        AlinharNaGrade(j, novaDir);
+                    } else {
+                        // e não tem para onde ir, força a espera
+                        j->estadoBot = BOT_ESTADO_ESPERANDO;
+                        j->temporizadorEstadoBot = 0.1f;
+                        j->direcaoMovimentoBot = 4;
                     }
                 }
                 break;
@@ -527,13 +579,12 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
                 {
                     j->estadoBot = BOT_ESTADO_VAGANDO; 
                     j->temporizadorEstadoBot = 0.5f; 
-                    j->direcaoMovimentoBot = GetRandomValue(0, 4); 
+                    j->direcaoMovimentoBot = GetRandomValue(0, 3); 
                 }
                 break;
             }
         }
 
-        //Em FUGINDO, o robô ignora a colisão da bomba pra não travar e morrer
         bool ignorarBombas;
         if (j->estadoBot == BOT_ESTADO_FUGINDO) {
             ignorarBombas = true;
@@ -551,34 +602,52 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
             case 4: j->frameAtual = 0; break; 
         }
     }
-    //Lógica pro robô
+    //Lógica do jogador humano
     else
     {
         float dx = 0.0f, dy = 0.0f;
         bool moveu = false;
 
+        //Movimento diagonal é permitido
         if (IsKeyDown(teclaCima) == true) { 
-            dy -= velocidadeAtual; 
-            j->direcaoAtual = DIR_CIMA; 
+            dy -= 1.0f; 
             moveu = true; 
         }
         if (IsKeyDown(teclaBaixo) == true) { 
-            dy += velocidadeAtual; 
-            j->direcaoAtual = DIR_BAIXO; 
+            dy += 1.0f; 
             moveu = true; 
         }
         if (IsKeyDown(teclaEsquerda) == true) { 
-            dx -= velocidadeAtual; 
-            j->direcaoAtual = DIR_ESQUERDA; 
+            dx -= 1.0f; 
             moveu = true; 
         }
         if (IsKeyDown(teclaDireita) == true) { 
-            dx += velocidadeAtual; 
-            j->direcaoAtual = DIR_DIREITA; 
+            dx += 1.0f; 
             moveu = true; 
         }
 
-        if (moveu == false) {
+        if (moveu == true) {
+            Vector2 direcao = { dx, dy };
+            float magnitude = Vector2Length(direcao);
+
+            if (magnitude > 0.0f) {
+
+                Vector2 movimento = Vector2Scale(Vector2Normalize(direcao), velocidadeAtual);
+                
+                dx = movimento.x;
+                dy = movimento.y;
+
+                if (IsKeyDown(teclaCima) == true) {
+                    j->direcaoAtual = DIR_CIMA;
+                } else if (IsKeyDown(teclaBaixo) == true) {
+                    j->direcaoAtual = DIR_BAIXO;
+                } else if (IsKeyDown(teclaEsquerda) == true) {
+                    j->direcaoAtual = DIR_ESQUERDA;
+                } else if (IsKeyDown(teclaDireita) == true) {
+                    j->direcaoAtual = DIR_DIREITA;
+                }
+            }
+        } else {
             j->direcaoAtual = DIR_PARADO;
             j->frameAtual = 0;
         }
@@ -586,6 +655,7 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
         MoverJogadorX(j, dx, gBombas, false);
         MoverJogadorY(j, dy, gBombas, false);
         
+        //Mantém a recarga para jogadores humanos
         if (IsKeyPressed(teclaBomba) == true && j->recargaBomba <= 0.0f)
         {
             AlinharEPlantarBomba(j, gBombas);
@@ -649,7 +719,6 @@ void DestruirJogador(Jogador* j)
         if (j->texCima[i].id > 0 && j->texCima[i].id != j->texParado.id) {
             UnloadTexture(j->texCima[i]);
         }
-        //j->texBaixo[i] usa j->texParado, então a verificação deve ignorar se for a mesma ID
         if (j->texBaixo[i].id > 0 && j->texBaixo[i].id != j->texParado.id) {
             UnloadTexture(j->texBaixo[i]);
         }
