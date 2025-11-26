@@ -1,7 +1,8 @@
-# 💣 BOMBERMAIN
+## 💣 BOMBERMAIN
 
 Um jogo inspirado em Bomberman, desenvolvido totalmente em C + Raylib para o projeto da cadeira de PIF da CESAR School.
 
+---
 ## 🎮 Sobre o Jogo
 
 O **_BomberMain_** é um jogo estilo grid-based onde você controla um personagem capaz de posicionar bombas, destruir blocos, avançar em fases e navegar por diferentes menus e modos de jogo.
@@ -42,7 +43,8 @@ Tudo foi desenvolvido na mão, usando apenas:
 
 Abaixo está o passo a passo completo para baixar, compilar e rodar o jogo em sua máquina.
 
-📥 1. Baixar o Repositório
+
+📥 **1. Baixar o Repositório**
 
 ✔️ Opção 1 — Clonar via Git
 git clone https://github.com/raulmaiab/BOMBER-MAiN
@@ -60,7 +62,9 @@ cd BOMBER-MAiN
 
 - Abra a pasta no VSCode
 
-📚 2. Instalar a Raylib
+
+📚 **2. Instalar a Raylib**
+
 🔵 Linux (Debian/Ubuntu):
 sudo apt install libraylib-dev
 
@@ -70,7 +74,9 @@ pacman -S mingw-w64-ucrt-x86_64-raylib
 
 Abra o terminal MSYS2 UCRT64 para compilar corretamente no Windows.
 
-🧱 3. Compilar o Jogo
+
+🧱 **3. Compilar o Jogo**
+
 
 No terminal, dentro da pasta do projeto, execute:
 
@@ -81,56 +87,66 @@ Se tudo correr bem, isso irá gerar o executável:
 
 ./BomberMain
 
-▶️ 4. Rodar o Jogo
+▶️ **4. Rodar o Jogo**
+
 Linux:
 ./BomberMain
 
 Windows:
 ./BomberMain.exe
 
-🖥️ Requisitos Mínimos
+---
+## 🖥️ Requisitos Mínimos
 
-CPU dual-core
+ - CPU dual-core
 
-2GB RAM
+- 2GB RAM
 
-Placa com OpenGL 3.3+
+- Placa com OpenGL 3.3+
 
-Raylib instalada corretamente
+- Raylib instalada corretamente
 
-VSCode recomendado
+- VSCode recomendado
 
+---
+## 🤝 Como Contribuir
 
-🤝 Como Contribuir
-
-Contribuições são bem-vindas!
+_Contribuições são bem-vindas!_
 Siga o fluxo:
 
-Faça um fork do repositório
+1. Faça um fork do repositório
 
-Crie sua branch
+2. Crie sua branch
 
-Commit suas mudanças
+3. Commit suas mudanças
 
-Abra um Pull Request
+4. Abra um Pull Request
 
-🕹️ Controles do Jogo
-Ação	Tecla
-Mover	WASD ou Setas
-Colocar bomba	Espaço
-Confirmar	Enter
-Sair/Tela cheia	ESC / F11
-👨‍💻 Autores do Projeto
+---
+## 🕹️ Controles do Jogo
 
-Guilherme Silvestre
 
-Raul Maia
+Mover:	WASD ou Setas
 
-Matheus Fialho
+Colocar bomba: Espaço
 
-Diego Magnata
+Confirmar:	Enter
 
-⭐ Deixe uma Estrela!
+Sair/Tela cheia:	ESC / F11
+
+---
+## 👨‍💻 Autores do Projeto
+
+**Arthur Moury**
+
+**L. Guilherme Silvestre**
+
+**Raul Maia**
+
+---
+
+### ⭐ Deixe uma Estrela!
 
 Se curtiu o projeto, deixe uma ⭐ no GitHub!
+
 Isso ajuda muito e fortalece o trabalho do grupo.
