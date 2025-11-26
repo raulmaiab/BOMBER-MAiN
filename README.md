@@ -50,7 +50,7 @@ Abaixo está o passo a passo completo para baixar, compilar e rodar o jogo em su
 
 ✔️ Opção 1 — Clonar via Git
 git clone https://github.com/raulmaiab/BOMBER-MAiN
-cd BOMBER-MAI-N
+cd BOMBER-MAIN
 
 ✔️ Opção 2 — Baixar ZIP
 
