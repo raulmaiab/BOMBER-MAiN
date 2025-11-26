@@ -49,7 +49,6 @@ AcaoOpcoes ExecutarMenuProximoNivel(InfoNivel info)
            break;
        }
 
-
        //Enter
        if (IsKeyPressed(KEY_ENTER) || (mouseSobreBotao && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)))
        {
