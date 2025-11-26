@@ -7,24 +7,24 @@ Um jogo inspirado em Bomberman, desenvolvido totalmente em C + Raylib para o pro
 
 O **_BomberMain_** é um jogo estilo grid-based onde você controla um personagem capaz de posicionar bombas, destruir blocos, avançar em fases e navegar por diferentes menus e modos de jogo.
 
-Tudo foi desenvolvido na mão, usando apenas:
+Tudo foi desenvolvido utilizando apenas:
 
 - Lógica em C
 
 - Renderização com raylib
 
-- Sprites 2D
+- Sprites 2D, realizados com Inteligência Artificial
 
 - Menus criados pela equipe
 
 - Telas de vitória/derrota
 
-- Sistema de história e batalha
+- Sistema de história e de batalha
 
 ---
 ## 🧩 Funcionalidades Principais
 
-👤 Controle total do personagem
+👤 Controle de movimentação do personagem
 
 💣 Colocação e gerenciamento de bombas
 
