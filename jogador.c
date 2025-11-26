@@ -17,7 +17,7 @@
 
 static void AlinharNaGrade(Jogador* j, int direcao) {
     Vector2 centro = { j->pos.x + TAMANHO_TILE/2.0f, j->pos.y + TAMANHO_TILE/2.0f };
-    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels
+    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
     Vector2 posGrade = ObterPosGradeDePixels(centro);
     
     // Vertical -> Alinha X
@@ -32,6 +32,7 @@ static void AlinharNaGrade(Jogador* j, int direcao) {
 
 static void AlinharEPlantarBomba(Jogador* j, NodeBombas *gBombas) {
     // Verifica limite de bombas do jogador
+    // O limite de bombas do jogador deve ser implementado no lado do jogador
     if (j->bombasAtivas >= j->limiteBombas) {
         return;
     }
@@ -42,22 +43,29 @@ static void AlinharEPlantarBomba(Jogador* j, NodeBombas *gBombas) {
     int gradeY = (int)(centroY / TAMANHO_TILE);
     Vector2 posBombaAlinhada = { (float)gradeX * TAMANHO_TILE, (float)gradeY * TAMANHO_TILE };
     
+    // A checagem de posição duplicada é feita dentro da função PlantarBomba em bomba.c
     // Passa o próprio jogador 'j' como dono
     PlantarBomba(gBombas, posBombaAlinhada, j->alcanceBomba, j); 
 }
 
+// CORRIGIDO: Esta função agora percorre a lista encadeada em vez de um array.
 static bool ExisteBombaEm(NodeBombas *gBombas, int gradeX, int gradeY) {
-    for (int i = 0; i < gBombas->quantidade; i++) {
-        if (gBombas->bombas[i].ativa == false) {
-            continue;
+    // Utiliza o ponteiro head da lista encadeada
+    NodeBomba *current = gBombas->head; 
+
+    while (current != NULL) { // Itera sobre cada nó
+        // A checagem de 'ativa' não é estritamente necessária se apenas
+        // bombas ativas são inseridas na lista, mas é mantida por segurança.
+        if (current->ativa != false) {
+            // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
+            Vector2 posGradeBomba = ObterPosGradeDePixels(current->posicao);
+            if ((int)posGradeBomba.x == gradeX && (int)posGradeBomba.y == gradeY) { 
+                return true; // Encontrado
+            }
         }
-        // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels
-        Vector2 posGradeBomba = ObterPosGradeDePixels(gBombas->bombas[i].posicao);
-        if ((int)posGradeBomba.x == gradeX && (int)posGradeBomba.y == gradeY) { 
-            return true; 
-        }
+        current = current->next; // Próximo nó
     }
-    return false; 
+    return false; // Não encontrado
 }
 
 static bool EstaNoCanto(int x, int y) {
@@ -97,11 +105,11 @@ static bool DirecaoEhSegura(int inicioX, int inicioY, int dir, NodeBombas *gBomb
     if (verificarX < 0 || verificarX >= LARGURA_GRADE_MAPA || verificarY < 0 || verificarY >= ALTURA_GRADE_MAPA) {
         return false;
     }
-    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO
+    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO (Mantida)
     if (ObterTipoTile(verificarX, verificarY) != TILE_VAZIO) {
         return false;
     }
-    if (ExisteBombaEm(gBombas, verificarX, verificarY)) {
+    if (ExisteBombaEm(gBombas, verificarX, verificarY)) { // Usa a nova ExisteBombaEm
         return false;
     }
     return true;
@@ -126,7 +134,7 @@ static bool DirecaoEhAndavel(int inicioX, int inicioY, int dir) {
     if (verificarX < 0 || verificarX >= LARGURA_GRADE_MAPA || verificarY < 0 || verificarY >= ALTURA_GRADE_MAPA) {
         return false;
     }
-    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO
+    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO (Mantida)
     if (ObterTipoTile(verificarX, verificarY) != TILE_VAZIO) {
         return false;
     } 
@@ -138,7 +146,7 @@ static void MoverJogadorX(Jogador *j, float delta, NodeBombas *gBombas, bool ign
         return;
     }
     Vector2 centroJogador = { j->pos.x + TAMANHO_TILE/2.0f, j->pos.y + TAMANHO_TILE/2.0f };
-    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels
+    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
     Vector2 posGradeJogador = ObterPosGradeDePixels(centroJogador);
     Vector2 posTentativa = j->pos;
     posTentativa.x += delta;
@@ -152,9 +160,9 @@ static void MoverJogadorX(Jogador *j, float delta, NodeBombas *gBombas, bool ign
     float cY1 = j->pos.y + MARGEM_COLISAO; 
     float cY2 = j->pos.y + TAMANHO_TILE - 1 - MARGEM_COLISAO; 
     
-    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels
+    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
     Vector2 gPos1 = ObterPosGradeDePixels((Vector2){cX, cY1});
-    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels
+    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
     Vector2 gPos2 = ObterPosGradeDePixels((Vector2){cX, cY2});
 
     bool b1;
@@ -164,7 +172,7 @@ static void MoverJogadorX(Jogador *j, float delta, NodeBombas *gBombas, bool ign
         b1 = false;
     }
     bool p1 = ((int)gPos1.x == (int)posGradeJogador.x && (int)gPos1.y == (int)posGradeJogador.y);
-    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO
+    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO (Mantida)
     bool t1 = (ObterTipoTile((int)gPos1.x, (int)gPos1.y) == TILE_VAZIO) && (b1 == false || p1);
     
     bool b2;
@@ -174,7 +182,7 @@ static void MoverJogadorX(Jogador *j, float delta, NodeBombas *gBombas, bool ign
         b2 = false;
     }
     bool p2 = ((int)gPos2.x == (int)posGradeJogador.x && (int)gPos2.y == (int)posGradeJogador.y);
-    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO
+    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO (Mantida)
     bool t2 = (ObterTipoTile((int)gPos2.x, (int)gPos2.y) == TILE_VAZIO) && (b2 == false || p2);
 
     if (t1 && t2) { 
@@ -187,7 +195,7 @@ static void MoverJogadorY(Jogador *j, float delta, NodeBombas *gBombas, bool ign
         return;
     }
     Vector2 centroJogador = { j->pos.x + TAMANHO_TILE/2.0f, j->pos.y + TAMANHO_TILE/2.0f };
-    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels
+    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
     Vector2 posGradeJogador = ObterPosGradeDePixels(centroJogador);
     Vector2 posTentativa = j->pos;
     posTentativa.y += delta;
@@ -201,9 +209,9 @@ static void MoverJogadorY(Jogador *j, float delta, NodeBombas *gBombas, bool ign
         cY = posTentativa.y + MARGEM_COLISAO;
     }
     
-    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels
+    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
     Vector2 gPos1 = ObterPosGradeDePixels((Vector2){cX1, cY});
-    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels
+    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
     Vector2 gPos2 = ObterPosGradeDePixels((Vector2){cX2, cY});
     
     bool b1;
@@ -213,7 +221,7 @@ static void MoverJogadorY(Jogador *j, float delta, NodeBombas *gBombas, bool ign
         b1 = false;
     }
     bool p1 = ((int)gPos1.x == (int)posGradeJogador.x && (int)gPos1.y == (int)posGradeJogador.y);
-    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO
+    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO (Mantida)
     bool t1 = (ObterTipoTile((int)gPos1.x, (int)gPos1.y) == TILE_VAZIO) && (b1 == false || p1);
     
     bool b2;
@@ -223,7 +231,7 @@ static void MoverJogadorY(Jogador *j, float delta, NodeBombas *gBombas, bool ign
         b2 = false;
     }
     bool p2 = ((int)gPos2.x == (int)posGradeJogador.x && (int)gPos2.y == (int)posGradeJogador.y);
-    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO
+    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO (Mantida)
     bool t2 = (ObterTipoTile((int)gPos2.x, (int)gPos2.y) == TILE_VAZIO) && (b2 == false || p2);
 
     if (t1 && t2) { 
@@ -237,7 +245,7 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
     Jogador j;
     j.pos = posInicial; j.velocidade = 2.5f; j.vivo = true;
     
-    // CORREÇÃO: spriteName -> nomeSprite (assumindo que esta foi a tradução)
+    // CORREÇÃO: spriteName -> nomeSprite (assumindo que esta foi a tradução) (Mantida)
     strncpy(j.nomeSprite, pastaSprites, COMPRIMENTO_MAX_NOME_SPRITE - 1); 
     j.nomeSprite[COMPRIMENTO_MAX_NOME_SPRITE - 1] = '\0';
     
@@ -322,7 +330,7 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
 
                 if (j->recargaBomba <= 0.0f) 
                 {
-                    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels
+                    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
                     Vector2 minhaPosGrade = ObterPosGradeDePixels(j->pos);
                     int gradeX = (int)minhaPosGrade.x;
                     int gradeY = (int)minhaPosGrade.y;
@@ -331,7 +339,7 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
                     {
                         bool gatilhoAcionado = false;
                         // Gatilho: Apenas bloco destrutível
-                        // CORREÇÃO: TILE_DESTRUCTIBLE -> TILE_DESTRUTIVEL
+                        // CORREÇÃO: TILE_DESTRUCTIBLE -> TILE_DESTRUTIVEL (Mantida)
                         if (ObterTipoTile(gradeX, gradeY - 1) == TILE_DESTRUTIVEL || 
                             ObterTipoTile(gradeX, gradeY + 1) == TILE_DESTRUTIVEL ||
                             ObterTipoTile(gradeX - 1, gradeY) == TILE_DESTRUTIVEL || 
@@ -391,7 +399,7 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
                 if (plantouBomba == false && j->temporizadorEstadoBot <= 0.0f)
                 {
                     int direcaoMover = -1;
-                    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels
+                    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
                     Vector2 minhaPosGrade = ObterPosGradeDePixels(j->pos);
                     int gx = (int)minhaPosGrade.x;
                     int gy = (int)minhaPosGrade.y;
@@ -474,9 +482,9 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
             // --- FUGINDO (FLEEING - Fuga com Imunidade a Bombas e Correção) ---
             case BOT_ESTADO_FUGINDO:
             {
-                // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels
+                // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
                 Vector2 minhaPosGrade = ObterPosGradeDePixels(j->pos);
-                // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels
+                // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
                 Vector2 posGradeBomba = ObterPosGradeDePixels(j->ultimaPosicaoBombaBot);
                 
                 int distanciaAlvo = j->alcanceBomba + 3; 

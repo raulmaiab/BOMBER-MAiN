@@ -2,15 +2,21 @@
 #include "raylib.h"
 #include "mapa.h"       
 #include "explosao.h"   
-#include "jogador.h"    // Necessário para acessar a struct Jogador completa
-#include <stddef.h>     // Necessário para NULL
+#include "jogador.h"    
+#include <stddef.h>     
+#include <stdlib.h>     // Necessário para malloc e free
 
 #define VELOCIDADE_PISCAR_BOMBA 0.2f 
 #define TEMPO_INICIO_PISCAR_BOMBA 1.0f 
 
+// Função que cria o cabeçalho da lista encadeada
 NodeBombas CriarNodeBombas(void) {
     NodeBombas g;
+    // O cabeçalho da lista aponta para NULL (lista vazia)
+    g.head = NULL; 
     g.quantidade = 0;
+    
+    // Carregamento de Texturas
     g.texNormal = LoadTexture("bombapng/bomba1.png");
     g.texAviso = LoadTexture("bombapng/bomba2.png");
     
@@ -21,37 +27,41 @@ NodeBombas CriarNodeBombas(void) {
         TraceLog(LOG_WARNING, "Falha ao carregar bombapng/bomba2.png");
     }
     
-    for (int i = 0; i < MAX_BOMBAS_ATIVAS; i++) {
-        g.bombas[i].ativa = false;
-        g.bombas[i].dono = NULL;
-    }
     return g;
 }
 
-// Função corrigida para aceitar ponteiro para Jogador
-void PlantarBomba(NodeBombas *g, Vector2 posBomba, int range, Jogador *dono) 
+// Função para ADICIONAR uma bomba (novo nó) na lista encadeada.
+void PlantarBomba(NodeBombas *g, Vector2 posBomba, int range, struct Jogador *dono) 
 {
-    if (g->quantidade >= MAX_BOMBAS_ATIVAS) {
+    NodeBomba *current = g->head;
+    while (current != NULL) {
+        if (current->ativa != false && current->posicao.x == posBomba.x && current->posicao.y == posBomba.y) {
+            return; 
+        }
+        current = current->next;
+    }
+    
+    //Alocação dinâmica pra o nó
+    NodeBomba *novaBomba = (NodeBomba*)malloc(sizeof(NodeBomba));
+    if (novaBomba == NULL) {
+        TraceLog(LOG_ERROR, "FALHA DE ALOCAÇÃO DE MEMÓRIA para nova bomba.");
         return;
     }
     
-    for (int i = 0; i < g->quantidade; i++) {
-        // Verifica se já existe uma bomba ativa na mesma posição
-        if (g->bombas[i].ativa != false && g->bombas[i].posicao.x == posBomba.x && g->bombas[i].posicao.y == posBomba.y) {
-            return; 
-        }
-    }
+    // 3. Inicialização dos dados da bomba
+    novaBomba->posicao = posBomba;
+    novaBomba->tempoExplosao = 3.0f;   
+    novaBomba->raioExplosao = range; 
+    novaBomba->ativa = true;           
+    novaBomba->frameAtual = 0; 
+    novaBomba->temporizadorFrame = 0.0f;
+    novaBomba->dono = dono; 
     
-    Bomba *b = &g->bombas[g->quantidade];
-    b->posicao = posBomba;
-    b->tempoExplosao = 3.0f;   
-    b->raioExplosao = range; 
-    b->ativa = true;           
-    b->frameAtual = 0; 
-    b->temporizadorFrame = 0.0f;
-    b->dono = dono; // Atribui o dono corretamente
+    // 4. Inserção no início da lista (ajustando ponteiros)
+    novaBomba->next = g->head; // O novo nó aponta para a antiga HEAD
+    g->head = novaBomba;       // A HEAD agora é o novo nó
     
-    // Incrementa contador de bombas do jogador
+    // 5. Incrementa contador
     if (dono != NULL) {
         dono->bombasAtivas++;
     }
@@ -59,69 +69,92 @@ void PlantarBomba(NodeBombas *g, Vector2 posBomba, int range, Jogador *dono)
     g->quantidade++;
 }
 
+// Função que itera, atualiza o tempo e REMOVE nós que explodiram.
 bool AtualizarBombas(NodeBombas *g, float deltaTime, NodeExplosoes *gExplosoes, struct Jogador* jogadores[], int numJogadores) 
 {
     bool algumaExplodiu = false;
 
-    for (int i = 0; i < g->quantidade; i++) {
-        Bomba *b = &g->bombas[i];
-        if (b->ativa == false) {
-            continue; 
+    // Ponteiros para iteração e remoção segura
+    NodeBomba *current = g->head;
+    NodeBomba *previous = NULL;
+
+    while (current != NULL) {
+        // A bomba deve estar ativa (embora todos os nós na lista devam ser ativos)
+        if (current->ativa == false) {
+             // Caso a lógica exija que 'ativa' seja checada
+             previous = current;
+             current = current->next;
+             continue;
         }
 
-        b->tempoExplosao -= deltaTime;
+        current->tempoExplosao -= deltaTime;
 
-        if (b->tempoExplosao <= TEMPO_INICIO_PISCAR_BOMBA) {
-            b->temporizadorFrame += deltaTime;
-            if (b->temporizadorFrame >= VELOCIDADE_PISCAR_BOMBA) {
-                b->temporizadorFrame = 0.0f;
-                if (b->frameAtual == 0) {
-                    b->frameAtual = 1;
-                } else {
-                    b->frameAtual = 0;
-                }
+        // Lógica de piscar (mantida)
+        if (current->tempoExplosao <= TEMPO_INICIO_PISCAR_BOMBA) {
+            current->temporizadorFrame += deltaTime;
+            if (current->temporizadorFrame >= VELOCIDADE_PISCAR_BOMBA) {
+                current->temporizadorFrame = 0.0f;
+                current->frameAtual = (current->frameAtual == 0) ? 1 : 0;
             }
         } else {
-            b->frameAtual = 0; 
+            current->frameAtual = 0; 
         }
 
-        if (b->tempoExplosao <= 0) {
+        // --- LÓGICA DE DETONAÇÃO E REMOÇÃO ---
+        if (current->tempoExplosao <= 0) {
             
-            CriarExplosao(gExplosoes, b->posicao, b->raioExplosao, jogadores, numJogadores);
+            // 1. Lógica do Jogo (cria explosão, atualiza dono)
+            CriarExplosao(gExplosoes, current->posicao, current->raioExplosao, jogadores, numJogadores);
             
-            if (b->dono != NULL) 
+            if (current->dono != NULL) 
             {
-                b->dono->bombasAtivas--;
-                if (b->dono->bombasAtivas < 0) {
-                    b->dono->bombasAtivas = 0;
+                current->dono->bombasAtivas--;
+                if (current->dono->bombasAtivas < 0) {
+                    current->dono->bombasAtivas = 0;
                 }
             }
 
             algumaExplodiu = true;
-            b->ativa = false; 
-            b->dono = NULL; // Limpa o dono
-
-            // Remove a bomba da lista, trocando com a última
-            g->bombas[i] = g->bombas[g->quantidade - 1];
-            g->bombas[g->quantidade - 1].ativa = false; 
-            g->bombas[g->quantidade - 1].dono = NULL;
+            // Não precisamos mais setar 'ativa=false', pois o nó será removido.
+            
+            // 2. Remoção do nó:
+            NodeBomba *to_remove = current;
+            
+            if (previous == NULL) {
+                // Caso 1: O nó a remover é o HEAD
+                g->head = current->next;
+            } else {
+                // Caso 2: O nó a remover está no meio ou fim.
+                // O anterior "salta" o nó atual.
+                previous->next = current->next;
+            }
+            
+            // 3. Avança 'current' para o próximo nó antes de liberar a memória
+            current = current->next; 
+            
+            // 4. Liberação de memória!
+            free(to_remove);
             g->quantidade--;
-            i--; // Volta um índice para reavaliar a bomba trocada para a posição atual
+            
+        } else {
+            // A bomba não explodiu, avança os ponteiros
+            previous = current;
+            current = current->next;
         }
     }
     return algumaExplodiu;
 }
 
+// Função para DESENHAR iterando sobre a lista encadeada
 void DesenharBombas(const NodeBombas *g) {
     Vector2 origem = { 0, 0 };
-    for (int i = 0; i < g->quantidade; i++) {
-        const Bomba *b = &g->bombas[i];
-        if (b->ativa == false) {
-            continue;
-        }
-            
+    NodeBomba *current = g->head;
+
+    while (current != NULL) {
+        // A lógica de 'ativa == false' não é mais necessária, pois só nós ativos estão na lista.
+        
         Texture2D texDesenhar;
-        if (b->frameAtual == 0) {
+        if (current->frameAtual == 0) {
             texDesenhar = g->texNormal;
         } else {
             texDesenhar = g->texAviso;
@@ -129,16 +162,33 @@ void DesenharBombas(const NodeBombas *g) {
         
         if (texDesenhar.id > 0) {
              Rectangle recFonte = { 0.0f, 0.0f, (float)texDesenhar.width, (float)texDesenhar.height };
-             Rectangle recDestino = { b->posicao.x, b->posicao.y, TAMANHO_TILE, TAMANHO_TILE };
+             Rectangle recDestino = { current->posicao.x, current->posicao.y, TAMANHO_TILE, TAMANHO_TILE };
              
              DrawTexturePro(texDesenhar, recFonte, recDestino, origem, 0.0f, WHITE);
         } else {
-             DrawCircle(b->posicao.x + TAMANHO_TILE/2, b->posicao.y + TAMANHO_TILE/2, 20, BLACK);
+             DrawCircle(current->posicao.x + TAMANHO_TILE/2, current->posicao.y + TAMANHO_TILE/2, 20, BLACK);
         }
+
+        current = current->next; // Avança para o próximo nó
     }
 }
 
+// Função para LIBERAR a memória de todos os nós da lista
 void UnloadBombas(NodeBombas *g) {
+    NodeBomba *current = g->head;
+    NodeBomba *next = NULL;
+
+    while (current != NULL) {
+        next = current->next; // Guarda o próximo nó
+        free(current);        // Libera a memória do nó atual
+        current = next;       // Avança para o próximo nó
+    }
+    
+    // Limpa o cabeçalho após liberar tudo
+    g->head = NULL; 
+    g->quantidade = 0;
+    
+    // Descarrega texturas
     UnloadTexture(g->texNormal);
     UnloadTexture(g->texAviso);
 }

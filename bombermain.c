@@ -7,7 +7,7 @@
 #include "options.h"    // Agora AcaoOpcoes
 #include "mapa.h"       
 #include "jogador.h"    
-#include "bomba.h"      
+#include "bomba.h"      // Agora usa lista encadeada, mas as chamadas são as mesmas
 #include "explosao.h" 
 #include "derrota.h"  
 #include "vitoria.h"
@@ -178,7 +178,7 @@ AcaoOpcoes ExecutarJogoBatalha(BattleSettings configuracoes) {
     
     Jogador* todosJogadores[] = {&j1, &j2, &j3, &j4};
     int numJogadores = 4;
-    NodeBombas gBombas = CriarNodeBombas();
+    NodeBombas gBombas = CriarNodeBombas(); // Chamada OK
     NodeExplosoes gExplosoes = CriarNodeExplosoes();
     
     // Alvos para a IA no modo 1P/2P
@@ -220,7 +220,7 @@ AcaoOpcoes ExecutarJogoBatalha(BattleSettings configuracoes) {
             VerificarColetaExtras(&j3);
             VerificarColetaExtras(&j4);
 
-            AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadores);
+            AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadores); // Chamada OK
             AtualizarExplosoes(&gExplosoes, deltaTime);
 
             // Lógica de Vitória/Derrota
@@ -316,7 +316,7 @@ AcaoOpcoes ExecutarJogoBatalha(BattleSettings configuracoes) {
             
             DesenharJogador(&j1); DesenharJogador(&j2);
             DesenharJogador(&j3); DesenharJogador(&j4);
-            DesenharBombas(&gBombas);
+            DesenharBombas(&gBombas); // Chamada OK
             DesenharExplosoes(&gExplosoes);
 
             // --- LÓGICA DO MENU OPTIONS ---
@@ -338,7 +338,7 @@ AcaoOpcoes ExecutarJogoBatalha(BattleSettings configuracoes) {
     DescarregarMapa(); 
     DestruirJogador(&j1); DestruirJogador(&j2);
     DestruirJogador(&j3); DestruirJogador(&j4);
-    UnloadBombas(&gBombas);
+    UnloadBombas(&gBombas); // Chamada OK
     DescarregarExplosoes(&gExplosoes); 
     
     return acaoRetorno;
@@ -388,7 +388,8 @@ AcaoOpcoes ExecutarJogoHistoria(StorySettings configuracoes)
         }
         
         // Configura info para o Menu de Transição
-        InfoNivel info = { // Usando a nova struct InfoNivel
+        // NOTA: 'InfoNivel' precisa ser definida no seu 'menu_prox.h'
+        InfoNivel info = { 
             .nivelAtual = nivel,
             .proximoMapa = mapasStory[nivel + 1]
         };
@@ -496,7 +497,7 @@ AcaoOpcoes ExecutarNivelHistoria(StorySettings configuracoes, const char* nomeMa
         numBots = 3;
     }
 
-    NodeBombas gBombas = CriarNodeBombas();
+    NodeBombas gBombas = CriarNodeBombas(); // Chamada OK
     NodeExplosoes gExplosoes = CriarNodeExplosoes();
     
     AcaoOpcoes acaoRetorno = OPCOES_ACAO_MENU_PRINCIPAL;
@@ -536,7 +537,7 @@ AcaoOpcoes ExecutarNivelHistoria(StorySettings configuracoes, const char* nomeMa
                 VerificarColetaExtras(&j_botC); 
             }
 
-            AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadoresTotal);
+            AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadoresTotal); // Chamada OK
             AtualizarExplosoes(&gExplosoes, deltaTime);
             
             // --- LÓGICA DE DERROTA ---
@@ -630,7 +631,7 @@ AcaoOpcoes ExecutarNivelHistoria(StorySettings configuracoes, const char* nomeMa
                 DesenharJogador(&j_botC); 
             }
 
-            DesenharBombas(&gBombas);
+            DesenharBombas(&gBombas); // Chamada OK
             DesenharExplosoes(&gExplosoes);
             
             if (isPaused == true) {
@@ -659,7 +660,7 @@ AcaoOpcoes ExecutarNivelHistoria(StorySettings configuracoes, const char* nomeMa
     if (doisJogadores == false) {
         DestruirJogador(&j_botC); 
     }
-    UnloadBombas(&gBombas);
+    UnloadBombas(&gBombas); // Chamada OK
     DescarregarExplosoes(&gExplosoes); 
     
     return acaoRetorno;

@@ -5,13 +5,15 @@
 #include <stdbool.h>
 #include "explosao.h" 
 
-#define MAX_BOMBAS_ATIVAS 20
+// MAX_BOMBAS_ATIVAS não é mais necessário, mas pode ser mantido para um limite suave.
 
-// Forward Declaration: Diz ao compilador que existe uma struct Jogador
-// Isso é necessário antes de includer o "jogador.h"
+// Forward Declaration:
 struct Jogador;
 
-typedef struct Bomba 
+// ----------------------------------------------------------------------
+// ESTRUTURA DO NÓ DA BOMBA (Substitui a struct Bomba original)
+// ----------------------------------------------------------------------
+typedef struct NodeBomba 
 {
     Vector2 posicao;          
     float tempoExplosao;      
@@ -21,24 +23,33 @@ typedef struct Bomba
     float temporizadorFrame;
     struct Jogador *dono; // Ponteiro para o dono da bomba
     
-} Bomba;
+    // NOVO: Ponteiro para o próximo nó da lista encadeada
+    struct NodeBomba *next; 
+    
+} NodeBomba;
 
+// ----------------------------------------------------------------------
+// ESTRUTURA DA LISTA (Apenas o cabeçalho)
+// ----------------------------------------------------------------------
 typedef struct {
-    Bomba bombas[MAX_BOMBAS_ATIVAS]; 
-    int quantidade;                  
+    NodeBomba *head; // Ponteiro para o primeiro nó
+    int quantidade;  // Contagem atual de bombas (opcional, mas útil)
     Texture2D texNormal; 
     Texture2D texAviso;  
 } NodeBombas;
 
 NodeBombas CriarNodeBombas(void); 
 
-// Assinatura corrigida para aceitar ponteiro para Jogador
+// Assinatura de PlantarBomba para ADICIONAR um novo nó (alocação dinâmica)
 void PlantarBomba(NodeBombas *g, Vector2 posBomba, int range, struct Jogador *dono);
 
+// Assinatura de AtualizarBombas para ITERAR, gerenciar o tempo, e REMOVER nós
 bool AtualizarBombas(NodeBombas *g, float deltaTime, NodeExplosoes *gExplosoes, struct Jogador* jogadores[], int numJogadores);
 
+// Assinatura de DesenharBombas para ITERAR sobre os nós
 void DesenharBombas(const NodeBombas *g);
 
+// Assinatura de UnloadBombas para DESTRUIR a lista e liberar a memória
 void UnloadBombas(NodeBombas *g);
 
 #endif // BOMBA_H
