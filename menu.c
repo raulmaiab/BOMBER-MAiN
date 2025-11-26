@@ -84,8 +84,7 @@ OpcaoMenu ExecutarTelaMenu(void)
             //Título "MAIN MENU" com brilho
             float tamanho_titulo = 80;
             float posicao_titulo_x = (largura_tela - MeasureText("MAIN MENU", tamanho_titulo)) / 2;
-            DesenharTextoBrilhante("MAIN MENU", (Vector2){ posicao_titulo_x, altura_tela * 0.15f }, tamanho_titulo, 
-                                 RAYWHITE, COLOR_BLUE_HIGHLIGHT);
+            DesenharTextoBrilhante("MAIN MENU", (Vector2){ posicao_titulo_x, altura_tela * 0.15f }, tamanho_titulo, RAYWHITE, COLOR_BLUE_HIGHLIGHT);
 
             //Opções do Menu (Centralizadas)
             float tamanho_fonte_opcao = 50;

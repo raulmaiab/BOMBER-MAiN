@@ -52,13 +52,21 @@ bool ExecutarMenuStory(StorySettings *configuracoes)
                 case 0: //Jogadores
                 {
                     //Alternando entre 1 e 2 jogadores
-                    numero_jogadores = (numero_jogadores == 1) ? 2 : 1; 
+                    if (numero_jogadores == 1) {
+                        numero_jogadores = 2;
+                    } else {
+                        numero_jogadores = 1;
+                    }
                     break;
                 }
                 case 1: //Extras
                 {
                     //Alternando o estado dos extras
-                    extras_habilitados = !extras_habilitados; 
+                    if (extras_habilitados == true) {
+                        extras_habilitados = false;
+                    } else {
+                        extras_habilitados = true;
+                    } 
                     break;
                 }
             }
