@@ -10,29 +10,29 @@
 #include <string.h> 
 #include <math.h>
 
+//Constantes
 #define MARGEM_COLISAO 4.0f 
 #define TEMPO_RECARGA_BOMBA 2.5f 
 
-// --- Funções Ajudantes ---
+//Funções Ajudantes
 
 static void AlinharNaGrade(Jogador* j, int direcao) {
     Vector2 centro = { j->pos.x + TAMANHO_TILE/2.0f, j->pos.y + TAMANHO_TILE/2.0f };
-    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
     Vector2 posGrade = ObterPosGradeDePixels(centro);
     
-    // Vertical -> Alinha X
+    //Vertical -> Alinha X
     if (direcao == 0 || direcao == 1) { 
         j->pos.x = posGrade.x * TAMANHO_TILE;
     }
-    // Horizontal -> Alinha Y
+    //Horizontal -> Alinha Y
     else if (direcao == 2 || direcao == 3) { 
         j->pos.y = posGrade.y * TAMANHO_TILE;
     }
 }
 
 static void AlinharEPlantarBomba(Jogador* j, NodeBombas *gBombas) {
-    // Verifica limite de bombas do jogador
-    // O limite de bombas do jogador deve ser implementado no lado do jogador
+    //Verifica limite de bombas do jogador
+    //O limite de bombas do jogador deve ser implementado no lado do jogador
     if (j->bombasAtivas >= j->limiteBombas) {
         return;
     }
@@ -43,29 +43,27 @@ static void AlinharEPlantarBomba(Jogador* j, NodeBombas *gBombas) {
     int gradeY = (int)(centroY / TAMANHO_TILE);
     Vector2 posBombaAlinhada = { (float)gradeX * TAMANHO_TILE, (float)gradeY * TAMANHO_TILE };
     
-    // A checagem de posição duplicada é feita dentro da função PlantarBomba em bomba.c
-    // Passa o próprio jogador 'j' como dono
+    //A checagem de posição duplicada é feita dentro da função PlantarBomba em bomba.c
+    //Passa o próprio jogador 'j' como dono
     PlantarBomba(gBombas, posBombaAlinhada, j->alcanceBomba, j); 
 }
 
-// CORRIGIDO: Esta função agora percorre a lista encadeada em vez de um array.
 static bool ExisteBombaEm(NodeBombas *gBombas, int gradeX, int gradeY) {
     // Utiliza o ponteiro head da lista encadeada
     NodeBomba *current = gBombas->head; 
 
-    while (current != NULL) { // Itera sobre cada nó
-        // A checagem de 'ativa' não é estritamente necessária se apenas
-        // bombas ativas são inseridas na lista, mas é mantida por segurança.
+    while (current != NULL) { //Itera sobre cada nó
+        //A checagem de 'ativa' não é estritamente necessária se apenas
+        //bombas ativas são inseridas na lista, mas é mantida por segurança.
         if (current->ativa != false) {
-            // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
             Vector2 posGradeBomba = ObterPosGradeDePixels(current->posicao);
             if ((int)posGradeBomba.x == gradeX && (int)posGradeBomba.y == gradeY) { 
-                return true; // Encontrado
+                return true; //encontrado
             }
         }
-        current = current->next; // Próximo nó
+        current = current->next; //Próximo nó
     }
-    return false; // Não encontrado
+    return false; //Não encontrado
 }
 
 static bool EstaNoCanto(int x, int y) {
@@ -86,7 +84,7 @@ static bool EstaNoCanto(int x, int y) {
     return false;
 }
 
-// Verifica se é seguro (SEM BOMBA, SEM PAREDE) - Usado no Vagando (WANDERING)
+//Verifica se é seguro
 static bool DirecaoEhSegura(int inicioX, int inicioY, int dir, NodeBombas *gBombas) {
     int dx = 0, dy = 0;
     if (dir == 0) {
@@ -105,17 +103,14 @@ static bool DirecaoEhSegura(int inicioX, int inicioY, int dir, NodeBombas *gBomb
     if (verificarX < 0 || verificarX >= LARGURA_GRADE_MAPA || verificarY < 0 || verificarY >= ALTURA_GRADE_MAPA) {
         return false;
     }
-    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO (Mantida)
     if (ObterTipoTile(verificarX, verificarY) != TILE_VAZIO) {
         return false;
     }
-    if (ExisteBombaEm(gBombas, verificarX, verificarY)) { // Usa a nova ExisteBombaEm
+    if (ExisteBombaEm(gBombas, verificarX, verificarY)) {
         return false;
     }
     return true;
 }
-
-// Verifica APENAS se é chão (IGNORA BOMBAS) - Usado na Fuga (FLEEING/Panic)
 static bool DirecaoEhAndavel(int inicioX, int inicioY, int dir) {
     int dx = 0, dy = 0;
     if (dir == 0) {
@@ -134,7 +129,6 @@ static bool DirecaoEhAndavel(int inicioX, int inicioY, int dir) {
     if (verificarX < 0 || verificarX >= LARGURA_GRADE_MAPA || verificarY < 0 || verificarY >= ALTURA_GRADE_MAPA) {
         return false;
     }
-    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO (Mantida)
     if (ObterTipoTile(verificarX, verificarY) != TILE_VAZIO) {
         return false;
     } 
@@ -146,7 +140,6 @@ static void MoverJogadorX(Jogador *j, float delta, NodeBombas *gBombas, bool ign
         return;
     }
     Vector2 centroJogador = { j->pos.x + TAMANHO_TILE/2.0f, j->pos.y + TAMANHO_TILE/2.0f };
-    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
     Vector2 posGradeJogador = ObterPosGradeDePixels(centroJogador);
     Vector2 posTentativa = j->pos;
     posTentativa.x += delta;
@@ -160,9 +153,7 @@ static void MoverJogadorX(Jogador *j, float delta, NodeBombas *gBombas, bool ign
     float cY1 = j->pos.y + MARGEM_COLISAO; 
     float cY2 = j->pos.y + TAMANHO_TILE - 1 - MARGEM_COLISAO; 
     
-    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
     Vector2 gPos1 = ObterPosGradeDePixels((Vector2){cX, cY1});
-    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
     Vector2 gPos2 = ObterPosGradeDePixels((Vector2){cX, cY2});
 
     bool b1;
@@ -172,7 +163,6 @@ static void MoverJogadorX(Jogador *j, float delta, NodeBombas *gBombas, bool ign
         b1 = false;
     }
     bool p1 = ((int)gPos1.x == (int)posGradeJogador.x && (int)gPos1.y == (int)posGradeJogador.y);
-    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO (Mantida)
     bool t1 = (ObterTipoTile((int)gPos1.x, (int)gPos1.y) == TILE_VAZIO) && (b1 == false || p1);
     
     bool b2;
@@ -182,7 +172,6 @@ static void MoverJogadorX(Jogador *j, float delta, NodeBombas *gBombas, bool ign
         b2 = false;
     }
     bool p2 = ((int)gPos2.x == (int)posGradeJogador.x && (int)gPos2.y == (int)posGradeJogador.y);
-    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO (Mantida)
     bool t2 = (ObterTipoTile((int)gPos2.x, (int)gPos2.y) == TILE_VAZIO) && (b2 == false || p2);
 
     if (t1 && t2) { 
@@ -195,7 +184,6 @@ static void MoverJogadorY(Jogador *j, float delta, NodeBombas *gBombas, bool ign
         return;
     }
     Vector2 centroJogador = { j->pos.x + TAMANHO_TILE/2.0f, j->pos.y + TAMANHO_TILE/2.0f };
-    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
     Vector2 posGradeJogador = ObterPosGradeDePixels(centroJogador);
     Vector2 posTentativa = j->pos;
     posTentativa.y += delta;
@@ -209,9 +197,7 @@ static void MoverJogadorY(Jogador *j, float delta, NodeBombas *gBombas, bool ign
         cY = posTentativa.y + MARGEM_COLISAO;
     }
     
-    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
     Vector2 gPos1 = ObterPosGradeDePixels((Vector2){cX1, cY});
-    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
     Vector2 gPos2 = ObterPosGradeDePixels((Vector2){cX2, cY});
     
     bool b1;
@@ -221,7 +207,6 @@ static void MoverJogadorY(Jogador *j, float delta, NodeBombas *gBombas, bool ign
         b1 = false;
     }
     bool p1 = ((int)gPos1.x == (int)posGradeJogador.x && (int)gPos1.y == (int)posGradeJogador.y);
-    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO (Mantida)
     bool t1 = (ObterTipoTile((int)gPos1.x, (int)gPos1.y) == TILE_VAZIO) && (b1 == false || p1);
     
     bool b2;
@@ -231,7 +216,6 @@ static void MoverJogadorY(Jogador *j, float delta, NodeBombas *gBombas, bool ign
         b2 = false;
     }
     bool p2 = ((int)gPos2.x == (int)posGradeJogador.x && (int)gPos2.y == (int)posGradeJogador.y);
-    // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO (Mantida)
     bool t2 = (ObterTipoTile((int)gPos2.x, (int)gPos2.y) == TILE_VAZIO) && (b2 == false || p2);
 
     if (t1 && t2) { 
@@ -239,13 +223,12 @@ static void MoverJogadorY(Jogador *j, float delta, NodeBombas *gBombas, bool ign
     }
 }
 
-// --- CriarJogador ---
+//Criar jogador
 Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
 {
     Jogador j;
     j.pos = posInicial; j.velocidade = 2.5f; j.vivo = true;
     
-    // CORREÇÃO: spriteName -> nomeSprite (assumindo que esta foi a tradução) (Mantida)
     strncpy(j.nomeSprite, pastaSprites, COMPRIMENTO_MAX_NOME_SPRITE - 1); 
     j.nomeSprite[COMPRIMENTO_MAX_NOME_SPRITE - 1] = '\0';
     
@@ -285,10 +268,8 @@ Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot)
     return j;
 }
 
-// --- AtualizarJogador ---
-void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquerda, int teclaDireita, int teclaBomba, 
-                      NodeBombas *gBombas, float deltaTime, 
-                      Jogador* alvoHumano1, Jogador* alvoHumano2)
+//Atualizar ações do jogador
+void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquerda, int teclaDireita, int teclaBomba, NodeBombas *gBombas, float deltaTime, Jogador* alvoHumano1, Jogador* alvoHumano2)
 {
     if (j->vivo == false) {
         return;
@@ -323,14 +304,13 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
 
         switch (j->estadoBot)
         {
-            // --- VAGANDO (WANDERING) ---
+            //Andando
             case BOT_ESTADO_VAGANDO:
             {
                 bool plantouBomba = false;
 
                 if (j->recargaBomba <= 0.0f) 
                 {
-                    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
                     Vector2 minhaPosGrade = ObterPosGradeDePixels(j->pos);
                     int gradeX = (int)minhaPosGrade.x;
                     int gradeY = (int)minhaPosGrade.y;
@@ -338,8 +318,7 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
                     if (EstaNoCanto(gradeX, gradeY) == false)
                     {
                         bool gatilhoAcionado = false;
-                        // Gatilho: Apenas bloco destrutível
-                        // CORREÇÃO: TILE_DESTRUCTIBLE -> TILE_DESTRUTIVEL (Mantida)
+                        //Colocar bomba em wallb.png
                         if (ObterTipoTile(gradeX, gradeY - 1) == TILE_DESTRUTIVEL || 
                             ObterTipoTile(gradeX, gradeY + 1) == TILE_DESTRUTIVEL ||
                             ObterTipoTile(gradeX - 1, gradeY) == TILE_DESTRUTIVEL || 
@@ -361,7 +340,7 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
                                 oposta = 2; 
                             }
 
-                            // Usa DirecaoEhSegura para PLANEJAR (considera bombas)
+                            //DirecaoEhSegura para PLANEJAR o movimento (considera bombas)
                             if (oposta != -1 && DirecaoEhSegura(gradeX, gradeY, oposta, gBombas) == true) {
                                 direcaoFuga = oposta;
                             }
@@ -395,11 +374,10 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
                     }
                 }
 
-                // Movimento Normal
+                //Movimento Normal
                 if (plantouBomba == false && j->temporizadorEstadoBot <= 0.0f)
                 {
                     int direcaoMover = -1;
-                    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
                     Vector2 minhaPosGrade = ObterPosGradeDePixels(j->pos);
                     int gx = (int)minhaPosGrade.x;
                     int gy = (int)minhaPosGrade.y;
@@ -479,12 +457,10 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
                 break; 
             }
             
-            // --- FUGINDO (FLEEING - Fuga com Imunidade a Bombas e Correção) ---
+            //FUGINDO (fuga com tentativa de sobrevivência a bomba)
             case BOT_ESTADO_FUGINDO:
             {
-                // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
                 Vector2 minhaPosGrade = ObterPosGradeDePixels(j->pos);
-                // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels (Mantida)
                 Vector2 posGradeBomba = ObterPosGradeDePixels(j->ultimaPosicaoBombaBot);
                 
                 int distanciaAlvo = j->alcanceBomba + 3; 
@@ -495,7 +471,7 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
                     j->temporizadorEstadoBot = TEMPO_RECARGA_BOMBA - 0.5f; 
                     j->direcaoMovimentoBot = 4; 
                 }
-                // Anti-stuck PÂNICO
+                //Pânico
                 else if (acabouDePlantar == false && Vector2Distance(posAntes, j->pos) < 0.05f) 
                 {
                     if (distanciaAtual >= 1) {
@@ -503,20 +479,20 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
                         j->temporizadorEstadoBot = TEMPO_RECARGA_BOMBA - 0.5f;
                         j->direcaoMovimentoBot = 4; 
                     } else {
-                        // Se travou no meio da fuga, usa DirecaoEhAndavel (IGNORA BOMBAS)
+                        //Se travou no meio da fuga, usa DirecaoEhAndavel
                         
                         int gx = (int)minhaPosGrade.x;
                         int gy = (int)minhaPosGrade.y;
                         int novaDir = -1;
                         
-                        // Tenta direção perpendicular primeiro
-                        if (j->direcaoMovimentoBot <= 1) { // Vertical
+                        //Tenta direção perpendicular primeiro
+                        if (j->direcaoMovimentoBot <= 1) { //Vertical
                             if (DirecaoEhAndavel(gx, gy, 2) == true) {
                                 novaDir = 2;
                             } else if (DirecaoEhAndavel(gx, gy, 3) == true) {
                                 novaDir = 3;
                             }
-                        } else { // Horizontal
+                        } else { //Horizontal
                             if (DirecaoEhAndavel(gx, gy, 0) == true) {
                                 novaDir = 0;
                             } else if (DirecaoEhAndavel(gx, gy, 1) == true) {
@@ -524,7 +500,7 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
                             }
                         }
                         
-                        // Se não achou perpendicular, tenta qualquer uma
+                        // e não achou perpendicular, tenta qualquer uma
                         if (novaDir == -1) {
                             if (DirecaoEhAndavel(gx, gy, 0) == true && j->direcaoMovimentoBot != 1) {
                                 novaDir = 0;
@@ -560,7 +536,7 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
             }
         }
 
-        // Em FUGINDO, o robô ignora a colisão da bomba pra não travar e morrer
+        //Em FUGINDO, o robô ignora a colisão da bomba pra não travar e morrer
         bool ignorarBombas;
         if (j->estadoBot == BOT_ESTADO_FUGINDO) {
             ignorarBombas = true;
