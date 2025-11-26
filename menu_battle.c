@@ -123,7 +123,11 @@ bool ExecutarMenuBattle(BattleSettings *configuracoes)
 
             //Formatação das preferências
             char texto_jogadores[4]; sprintf(texto_jogadores, "%d", numero_jogadores);
-            const char* texto_extras = (extras_habilitados) ? "Ligado" : "Desligado";
+            if (extras_habilitados) {
+                texto_extras = "Ligado";
+            } else {
+                texto_extras = "Desligado";
+            }
             
             char texto_mapa[16];
             switch(indice_mapa) {
@@ -155,8 +159,16 @@ bool ExecutarMenuBattle(BattleSettings *configuracoes)
             //Desenha as opções configuráveis (0, 1 e 2) (jogador, extra e mapa)
             for (int indice = 0; indice < 3; indice++) 
             {
-                Color cor_base = (indice == opcao_atual) ? COLOR_YELLOW_HIGHLIGHT : COLOR_GRAY_OPTION;
-                Color cor_brilho = (indice == opcao_atual) ? (Color){200, 160, 0, 150} : (Color){50,50,50,100};
+                if (indice == opcao_atual) {
+                    cor_base = COLOR_YELLOW_HIGHLIGHT;
+                } else {
+                    cor_base = COLOR_GRAY_OPTION;
+                }
+                if (indice == opcao_atual) {
+                    cor_brilho = (Color){200, 160, 0, 150};
+                } else {
+                    cor_brilho = (Color){50, 50, 50, 100};
+                }
                 
                 //Desenha o Rótulo
                 DesenharTextoBrilhante(rotulos[indice], (Vector2){ coluna_rotulo_x, menu_posicao_y_inicial + (indice * espacamento_vertical) }, tamanho_fonte_opcao, cor_base, cor_brilho);
@@ -177,8 +189,16 @@ bool ExecutarMenuBattle(BattleSettings *configuracoes)
             
             if (opcao_atual == 3) {
                 bool deve_piscar = fmod(GetTime(), 0.2) > 0.1;
-                Color cor_base = deve_piscar ? COLOR_YELLOW_HIGHLIGHT : WHITE;
-                Color cor_brilho = deve_piscar ? (Color){200, 160, 0, 150} : COLOR_BLUE_HIGHLIGHT;
+                if (deve_piscar) {
+                    cor_base = COLOR_YELLOW_HIGHLIGHT;
+                } else {
+                    cor_base = WHITE;
+                }
+                if (deve_piscar) {
+                    cor_brilho = (Color){200, 160, 0, 150};
+                } else {
+                    cor_brilho = COLOR_BLUE_HIGHLIGHT;
+                }
                 DesenharTextoBrilhante("INICIAR", (Vector2){ iniciar_x, iniciar_y }, tamanho_fonte_opcao, cor_base, cor_brilho);
             } else {
                 DesenharTextoBrilhante("INICIAR", (Vector2){ iniciar_x, iniciar_y }, tamanho_fonte_opcao, COLOR_GRAY_OPTION, (Color){50,50,50,100});

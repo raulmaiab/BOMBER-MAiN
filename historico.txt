@@ -15,3 +15,4 @@
 2025-11-25 17:15:23 | Story Nivel 3 (1P) | Player 1 (Branco)
 2025-11-25 18:55:13 | Battle (1P) | Player 1 (Branco)
 2025-11-25 18:55:22 | Battle (1P) | Player 1 (Branco)
+2025-11-26 12:52:44 | Battle (1P) | Player 1 (Branco)

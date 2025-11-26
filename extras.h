@@ -5,11 +5,11 @@
 #include "jogador.h" 
 
 typedef enum {
-    EXTRA_ALCANCE,      // 0
-    EXTRA_DEFESA,       // 1
-    EXTRA_VELOCIDADE,   // 2
-    EXTRA_LIMITE_BOMBA, // 3
-    EXTRA_MAX           // 4 (Total para o Random)
+    EXTRA_ALCANCE,      
+    EXTRA_DEFESA,       
+    EXTRA_VELOCIDADE,   
+    EXTRA_LIMITE_BOMBA, 
+    EXTRA_MAX           
 } TipoExtra;
 
 typedef struct {
@@ -30,4 +30,4 @@ void ResetarExtras(void);
 
 bool ObterExtraMaisProximo(Vector2 posJogador, float raioBusca, Vector2* posOut);
 
-#endif // EXTRAS_H
+#endif

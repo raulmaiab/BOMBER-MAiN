@@ -79,8 +79,6 @@ void SpawnarExtra(Vector2 pos) {
 
     extras[slot].pos = pos;
     extras[slot].ativo = true;
-    
-    // Sorteia de 0 a 3 (inclui EXTRA_LIMITE_BOMBA)
     extras[slot].tipo = GetRandomValue(0, EXTRA_MAX - 1); 
     
     quantidadeExtras++; 

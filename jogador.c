@@ -42,18 +42,15 @@ static void AlinharEPlantarBomba(Jogador* j, NodeBombas *gBombas) {
     int gradeX = (int)(centroX / TAMANHO_TILE);
     int gradeY = (int)(centroY / TAMANHO_TILE);
     Vector2 posBombaAlinhada = { (float)gradeX * TAMANHO_TILE, (float)gradeY * TAMANHO_TILE };
-    
-    //A checagem de posição duplicada é feita dentro da função PlantarBomba em bomba.c
     //Passa o próprio jogador 'j' como dono
     PlantarBomba(gBombas, posBombaAlinhada, j->alcanceBomba, j); 
 }
 
 static bool ExisteBombaEm(NodeBombas *gBombas, int gradeX, int gradeY) {
-    // Utiliza o ponteiro head da lista encadeada
+    //Utiliza o ponteiro head da lista encadeada
     NodeBomba *current = gBombas->head; 
 
     while (current != NULL) { //Itera sobre cada nó
-        //A checagem de 'ativa' não é estritamente necessária se apenas
         //bombas ativas são inseridas na lista, mas é mantida por segurança.
         if (current->ativa != false) {
             Vector2 posGradeBomba = ObterPosGradeDePixels(current->posicao);

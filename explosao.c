@@ -1,7 +1,7 @@
 #include "explosao.h"
 #include "mapa.h"
-#include "extras.h"   // <--- Necessário para SpawnarExtra
-#include "jogador.h"  // <--- Necessário para verificar vida dos jogadores
+#include "extras.h"  
+#include "jogador.h"  
 #include "raylib.h"
 
 #define VELOCIDADE_FRAME_EXPLOSAO 0.15f 
@@ -27,14 +27,12 @@ NodeExplosoes CriarNodeExplosoes(void)
     return g;
 }
 
-// Ativa apenas o efeito visual (frame único)
 void AtivarExplosao(NodeExplosoes *g, Vector2 pos)
 {
     if (g->quantidade >= MAX_EXPLOSOES) {
         return; 
     }
 
-    // Procura slot inativo para reciclar
     int slot = -1;
     for(int i=0; i<MAX_EXPLOSOES; i++) {
         if (g->explosoes[i].ativa == false) {
@@ -42,7 +40,6 @@ void AtivarExplosao(NodeExplosoes *g, Vector2 pos)
             break;
         }
     }
-    // Se não achou vazio e ainda tem espaço no fim
     if (slot == -1 && g->quantidade < MAX_EXPLOSOES) {
         slot = g->quantidade;
         g->quantidade++;
@@ -57,7 +54,7 @@ void AtivarExplosao(NodeExplosoes *g, Vector2 pos)
     }
 }
 
-// --- Lógica de Dano (Copiada e adaptada para cá) ---
+//Lógica de dano
 static void VerificarDanoJogadores(int gradeX, int gradeY, Jogador* jogadores[], int numJogadores)
 {
     for (int i = 0; i < numJogadores; i++)
@@ -67,7 +64,7 @@ static void VerificarDanoJogadores(int gradeX, int gradeY, Jogador* jogadores[],
             continue;
         }
 
-        // Centro do jogador
+        //Centro do jogador
         float centroX = j->pos.x + (TAMANHO_TILE / 2.0f);
         float centroY = j->pos.y + (TAMANHO_TILE / 2.0f);
         int pGradeX = (int)(centroX / TAMANHO_TILE);
@@ -75,18 +72,15 @@ static void VerificarDanoJogadores(int gradeX, int gradeY, Jogador* jogadores[],
 
         if (pGradeX == gradeX && pGradeY == gradeY)
         {
-            // --- Verifica POWER-UP de DEFESA ---
             if (j->temDefesa == true) {
-                // O jogador sobrevive! 
                 continue; 
             }
             
-            j->vivo = false; // Mata o jogador
+            j->vivo = false; 
         }
     }
 }
 
-// --- Lógica de Propagação e Drop de Extras ---
 static void PropagarDirecao(NodeExplosoes *g, int inicioX, int inicioY, int dx, int dy, int alcance, Jogador* jogadores[], int numJogadores)
 {
     for (int i = 1; i <= alcance; i++)
@@ -94,75 +88,59 @@ static void PropagarDirecao(NodeExplosoes *g, int inicioX, int inicioY, int dx, 
         int verificarX = inicioX + (dx * i);
         int verificarY = inicioY + (dy * i);
         
-        // 1. Verifica Jogadores
+        //Verifica Jogadores
         VerificarDanoJogadores(verificarX, verificarY, jogadores, numJogadores);
         
-        // 2. Verifica Paredes
+        //Verifica Paredes
         TipoTile tipo = ObterTipoTile(verificarX, verificarY);
         Vector2 posPixel = { (float)verificarX * TAMANHO_TILE, (float)verificarY * TAMANHO_TILE };
-        
-        // CORREÇÃO: TILE_INDESTRUCTIBLE -> TILE_INDESTRUTIVEL
         if (tipo == TILE_INDESTRUTIVEL) {
-            break; // Para a explosão
+            break; //Para a explosão
         }
         
-        // CORREÇÃO: TILE_DESTRUCTIBLE -> TILE_DESTRUTIVEL
         if (tipo == TILE_DESTRUTIVEL) {
             // Quebra o bloco
-            // CORREÇÃO: SetTileTipo -> DefinirTipoTile
-            // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO
             DefinirTipoTile(verificarX, verificarY, TILE_VAZIO); 
             
-            // Visual da explosão no bloco
+            //Visual da explosão no bloco
             AtivarExplosao(g, posPixel);
             
-            // --- AQUI: Tenta spawnar um Extra ---
+            //Spawner extra
             SpawnarExtra(posPixel); 
-            // ------------------------------------
             
-            break; // Para a explosão ao quebrar o bloco
+            break; 
         }
         
-        // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO
         if (tipo == TILE_VAZIO) {
             AtivarExplosao(g, posPixel); 
         }
     }
 }
 
-// --- Função Principal chamada pelo bomba.c ---
 void CriarExplosao(NodeExplosoes *g, Vector2 centro, int alcance, Jogador* jogadores[], int numJogadores)
 {
-    // CORREÇÃO: ObterPosicaoGradeDosPixels -> ObterPosGradeDePixels
     Vector2 posGrade = ObterPosGradeDePixels(centro);
     int gradeX = (int)posGrade.x;
     int gradeY = (int)posGrade.y;
 
-    // 1. Explode o centro
     AtivarExplosao(g, centro);
     VerificarDanoJogadores(gradeX, gradeY, jogadores, numJogadores);
     
-    // Caso raro: bomba em cima de bloco quebrável
-    // CORREÇÃO: TILE_DESTRUCTIBLE -> TILE_DESTRUTIVEL
     if (ObterTipoTile(gradeX, gradeY) == TILE_DESTRUTIVEL) {
-        // CORREÇÃO: SetTileTipo -> DefinirTipoTile
-        // CORREÇÃO: TILE_EMPTY -> TILE_VAZIO
         DefinirTipoTile(gradeX, gradeY, TILE_VAZIO);
         SpawnarExtra(centro);
     }
 
-    // 2. Propaga para as 4 direções
+    //explode pra os 4 lados
     PropagarDirecao(g, gradeX, gradeY,  1,  0, alcance, jogadores, numJogadores); // Direita
     PropagarDirecao(g, gradeX, gradeY, -1,  0, alcance, jogadores, numJogadores); // Esquerda
     PropagarDirecao(g, gradeX, gradeY,  0,  1, alcance, jogadores, numJogadores); // Baixo
     PropagarDirecao(g, gradeX, gradeY,  0, -1, alcance, jogadores, numJogadores); // Cima
 }
-
-// --- Funções Padrão (Atualizar/Desenhar) ---
-
+//Desenhar
 void AtualizarExplosoes(NodeExplosoes *g, float deltaTime)
 {
-    for (int i = 0; i < MAX_EXPLOSOES; i++) { // Percorre array fixo
+    for (int i = 0; i < MAX_EXPLOSOES; i++) { 
         Explosao *e = &g->explosoes[i];
         if (e->ativa == false) {
             continue;
@@ -205,7 +183,6 @@ void DesenharExplosoes(const NodeExplosoes *g)
     }
 }
 
-// CORREÇÃO: UnloadExplosoes -> DescarregarExplosoes
 void DescarregarExplosoes(NodeExplosoes *g)
 {
     UnloadTexture(g->texExplo1);

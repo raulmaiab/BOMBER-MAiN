@@ -31,7 +31,7 @@ bool ExecutarMenuStory(StorySettings *configuracoes)
     
     opcao_atual = 0; 
     
-    // Total de 4 (Jogadores, Extras, iniciar, voltar)
+    //Total de 4 (Jogadores, Extras, iniciar, voltar)
     const int numero_opcoes = 4; 
 
     while (WindowShouldClose() == 0)
