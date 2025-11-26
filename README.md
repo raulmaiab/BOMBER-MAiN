@@ -50,7 +50,7 @@ Abaixo está o passo a passo completo para baixar, compilar e rodar o jogo em su
 
 ✔️ Opção 1 — Clonar via Git
 git clone https://github.com/raulmaiab/BOMBER-MAiN
-cd BOMBER-MAiN
+cd BOMBER-MAI-N
 
 ✔️ Opção 2 — Baixar ZIP
 
@@ -101,7 +101,7 @@ Windows:
 ---
 ## 🖥️ Requisitos Mínimos
 
- - CPU dual-core
+ - CPU dual-core
 
 - 2GB RAM
 
@@ -147,7 +147,13 @@ Sair/Tela cheia:	ESC / F11
 **Raul Maia**
 
 ---
+## 🎥 Vídeo de Demonstração (Screencast)
 
+Assista ao vídeo de demonstração completa do jogo no YouTube:
+
+[Screencast - BOMBERMAIN](https://youtu.be/J-59WFnmf6s)
+
+---
 ### ⭐ Deixe uma Estrela!
 
 Se curtiu o projeto, deixe uma ⭐ no GitHub!
