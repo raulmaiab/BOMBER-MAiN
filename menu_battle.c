@@ -34,6 +34,10 @@ bool ExecutarMenuBattle(BattleSettings *configuracoes)
     
     //Opções: Jogadores, Extras, Mapa, start, back
     const int numero_opcoes = 5; 
+    
+    const char* texto_extras;
+    Color cor_base;
+    Color cor_brilho;
 
     while (WindowShouldClose() == 0)
     {
@@ -209,8 +213,8 @@ bool ExecutarMenuBattle(BattleSettings *configuracoes)
             float voltar_x = (largura_tela - MeasureText("VOLTAR", tamanho_fonte_opcao)) / 2;
             
             if (opcao_atual == 4) {
-                Color cor_base = COLOR_YELLOW_HIGHLIGHT; 
-                Color cor_brilho = (Color){200, 160, 0, 150};
+                cor_base = COLOR_YELLOW_HIGHLIGHT; 
+                cor_brilho = (Color){200, 160, 0, 150};
                 DesenharTextoBrilhante("VOLTAR", (Vector2){ voltar_x, voltar_y }, tamanho_fonte_opcao, cor_base, cor_brilho);
             } else {
                 DesenharTextoBrilhante("VOLTAR", (Vector2){ voltar_x, voltar_y }, tamanho_fonte_opcao, COLOR_GRAY_OPTION, (Color){50,50,50,100});
@@ -260,7 +264,7 @@ static void AtualizarEfeitosMenu(void) {
         if (gotas_chuva[indice].posicao.y > altura_tela) {
             gotas_chuva[indice].posicao.x = (float)GetRandomValue(0, largura_tela);
             gotas_chuva[indice].posicao.y = (float)GetRandomValue(-40, -20); 
-            gotas_chuva[indice].velocidade = (float)GetRandomValue(200, 600);
+            gotas_chuva[indice].posicao.y = (float)GetRandomValue(200, 600);
         }
     }
     

@@ -16,3 +16,12 @@
 2025-11-25 18:55:13 | Battle (1P) | Player 1 (Branco)
 2025-11-25 18:55:22 | Battle (1P) | Player 1 (Branco)
 2025-11-26 12:52:44 | Battle (1P) | Player 1 (Branco)
+2025-11-26 17:35:04 | Battle (1P) | Player 1 (Branco)
+2025-11-26 17:36:34 | Battle (2P) | Player 1 (Branco) - PvP Vitoria
+2025-11-26 17:36:58 | Story Nivel 1 (1P) | Player 1 (Branco)
+2025-11-26 17:37:28 | Story Nivel 1 (1P) | Player 1 (Branco)
+2025-11-26 17:52:16 | Story Nivel 1 (1P) | Player 1 (Branco)
+2025-11-26 17:55:28 | Story Nivel 1 (1P) | Player 1 (Branco)
+2025-11-26 17:58:37 | Story Nivel 1 (1P) | Player 1 (Branco)
+2025-11-26 17:59:07 | Story Nivel 2 (1P) | Player 1 (Branco)
+2025-11-26 17:59:24 | Story Nivel 3 (1P) | Player 1 (Branco)

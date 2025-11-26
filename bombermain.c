@@ -4,10 +4,10 @@
 #include "menu_battle.h"
 #include "menu_story.h" 
 #include "menu_prox.h"  
-#include "options.h"    // Agora AcaoOpcoes
+#include "options.h"    
 #include "mapa.h"       
 #include "jogador.h"    
-#include "bomba.h"      // Agora usa lista encadeada, mas as chamadas são as mesmas
+#include "bomba.h"      
 #include "explosao.h" 
 #include "derrota.h"  
 #include "vitoria.h"
@@ -23,16 +23,10 @@
 const int LARGURA_TELA = 1440;
 const int ALTURA_TELA = 900;
 
-//Constantes
-#define ESCOLHA_LOJA 10
-#define ESCOLHA_OUTROS 11
-
 //Operações básicas
 AcaoOpcoes ExecutarJogoBatalha(BattleSettings configuracoes);
 AcaoOpcoes ExecutarJogoHistoria(StorySettings configuracoes); 
 AcaoOpcoes ExecutarNivelHistoria(StorySettings configuracoes, const char* nomeMapa, int nivel, bool* nivelVitoria); 
-void ExecutarLoja(void);
-void ExecutarOutros(void);
 
 //Loop principal
 int main(void)
@@ -107,10 +101,6 @@ int main(void)
                     }
                 }
 
-            } else if (escolha == ESCOLHA_LOJA) { 
-                ExecutarLoja();
-            } else if (escolha == ESCOLHA_OUTROS) { 
-                ExecutarOutros();
             }
             
             break; 
@@ -149,12 +139,12 @@ AcaoOpcoes ExecutarJogoBatalha(BattleSettings configuracoes) {
     //Lógica ajustada para j4_ehHumano
     bool j4_ehHumano;
     if (configuracoes.numero_jogadores == 2) {
-        j4_ehHumano = true; // 2p, j4 é humano
+        j4_ehHumano = true;
     } else {
-        j4_ehHumano = false; //1p, j4 é robô
+        j4_ehHumano = false;
     }
     
-    // Jogadores
+    //Jogadores
     Jogador j1 = CriarJogador(ObterPosicaoInicialJogador(0), "SpriteBranco", j1_ehHumano == false); 
     Jogador j2 = CriarJogador(ObterPosicaoInicialJogador(1), "SpriteVermelho", true);      
     Jogador j3 = CriarJogador(ObterPosicaoInicialJogador(2), "SpriteAzul", true);      
@@ -335,25 +325,22 @@ AcaoOpcoes ExecutarJogoHistoria(StorySettings configuracoes)
         do {
             acaoNivel = ExecutarNivelHistoria(configuracoes, mapaAtual, nivel, &nivelVitoria);
             
-            if (acaoNivel != OPCOES_ACAO_MENU_PRINCIPAL && acaoNivel != OPCOES_ACAO_REINICIAR)
+            if (acaoNivel == OPCOES_ACAO_EDITAR_JOGO || acaoNivel == OPCOES_ACAO_MENU_PRINCIPAL)
             {
-                //Sai do loop do for pra retornar a ação
                 return acaoNivel;
             }
-        } while (acaoNivel == OPCOES_ACAO_REINICIAR);-
+            
+        } while (acaoNivel == OPCOES_ACAO_REINICIAR);
 
         if (nivelVitoria == false)
         {
-            //O nível não foi concluído
             return OPCOES_ACAO_MENU_PRINCIPAL;
         }
 
-        //Se for o último nível, o loop acaba e vamos para a tela de vitória final.
         if (nivel == totalNiveis - 1) { 
             break; 
         }
         
-        //Configura info para o Menu de prox
         InfoNivel info = { 
             .nivelAtual = nivel,
             .proximoMapa = mapasStory[nivel + 1]
@@ -361,7 +348,7 @@ AcaoOpcoes ExecutarJogoHistoria(StorySettings configuracoes)
         
         AcaoOpcoes acaoMenu = ExecutarMenuProximoNivel(info);
         
-        if (acaoMenu == OPCOES_ACAO_MENU_PRINCIPAL || acaoMenu == OPCOES_ACAO_NENHUMA)
+        if (acaoMenu != OPCOES_ACAO_NENHUMA)
         {
             return OPCOES_ACAO_MENU_PRINCIPAL;
         }
@@ -369,7 +356,7 @@ AcaoOpcoes ExecutarJogoHistoria(StorySettings configuracoes)
 
     //Se completou todos os níveis
     if (nivelVitoria == true) {
-        ExecutarTelaVitoria(); //Vitória no modo história
+        ExecutarTelaVitoria();
     }
     
     return OPCOES_ACAO_MENU_PRINCIPAL;
@@ -494,10 +481,10 @@ AcaoOpcoes ExecutarNivelHistoria(StorySettings configuracoes, const char* nomeMa
                 VerificarColetaExtras(&j_botC); 
             }
 
-            AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadoresTotal); // Chamada OK
+            AtualizarBombas(&gBombas, deltaTime, &gExplosoes, todosJogadores, numJogadoresTotal); 
             AtualizarExplosoes(&gExplosoes, deltaTime);
             
-            // --- LÓGICA DE DERROTA ---
+            //Lógica Derrota
             bool todosHumanosMortos = true;
             for (int i = 0; i < numHumanos; i++) { 
                 if (jogadoresHumanos[i] != NULL && jogadoresHumanos[i]->vivo == true) { 
@@ -585,7 +572,7 @@ AcaoOpcoes ExecutarNivelHistoria(StorySettings configuracoes, const char* nomeMa
                 DesenharJogador(&j_botC); 
             }
 
-            DesenharBombas(&gBombas); //Chamada OK
+            DesenharBombas(&gBombas); 
             DesenharExplosoes(&gExplosoes);
             
             if (isPaused == true) {
@@ -614,7 +601,7 @@ AcaoOpcoes ExecutarNivelHistoria(StorySettings configuracoes, const char* nomeMa
     if (doisJogadores == false) {
         DestruirJogador(&j_botC); 
     }
-    UnloadBombas(&gBombas); //Chamada OK
+    UnloadBombas(&gBombas); 
     DescarregarExplosoes(&gExplosoes); 
     
     return acaoRetorno;
