@@ -115,7 +115,7 @@ bool ExecutarMenuStory(StorySettings *configuracoes)
             const char* rotulos[] = {"Jogadores:", "Extras:"}; 
             const char* valores[] = {pText, eText}; 
             
-            //Opções configuráveis (0, 1)
+            //Opção
             for (int indice = 0; indice < 2; indice++) 
             {
                 Color cor_base;
@@ -141,7 +141,7 @@ bool ExecutarMenuStory(StorySettings *configuracoes)
                 DesenharTextoBrilhante(">", (Vector2){ coluna_valor_x + MeasureText(valores[indice], tamanho_fonte_opcao) + 30, menu_posicao_y_inicial + (indice * espacamento_vertical) }, tamanho_fonte_opcao, cor_base, cor_brilho);
             }
             
-            //Iniciar (Opção 2)
+            //Iniciar (opção 2)
             float iniciar_y = menu_posicao_y_inicial + (2 * espacamento_vertical) + 20; 
             float iniciar_x = (largura_tela - MeasureText("INICIAR JOGO", tamanho_fonte_opcao)) / 2;
             
@@ -165,7 +165,7 @@ bool ExecutarMenuStory(StorySettings *configuracoes)
                 DesenharTextoBrilhante("INICIAR JOGO", (Vector2){ iniciar_x, iniciar_y }, tamanho_fonte_opcao, COLOR_GRAY_OPTION, (Color){50,50,50,100});
             }
             
-            //Voltar (Opção 3)
+            //Voltar (opção 3)
             float voltar_y = iniciar_y + espacamento_vertical; 
             float voltar_x = (largura_tela - MeasureText("VOLTAR", tamanho_fonte_opcao)) / 2;
             

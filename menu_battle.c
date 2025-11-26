@@ -152,7 +152,7 @@ bool ExecutarMenuBattle(BattleSettings *configuracoes)
             const char* rotulos[] = {"Jogadores:", "Extras:", "Mapa:"};
             const char* valores[] = {texto_jogadores, texto_extras, texto_mapa};
             
-            //Desenha as opções configuráveis (0, 1, 2)
+            //Desenha as opções configuráveis (0, 1 e 2) (jogador, extra e mapa)
             for (int indice = 0; indice < 3; indice++) 
             {
                 Color cor_base = (indice == opcao_atual) ? COLOR_YELLOW_HIGHLIGHT : COLOR_GRAY_OPTION;

@@ -15,7 +15,7 @@ typedef struct {
     StoryDifficulty difficulty;
 } StorySettings;
 
-// Retorna true se o jogador selecionou START, false se apertou ESC
+//Retorna true se o jogador selecionou START, false se apertou ESC
 bool ExecutarMenuStory(StorySettings *settings);
 
 #endif 

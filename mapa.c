@@ -1,23 +1,23 @@
 #include "mapa.h"
 #include <stdlib.h> 
 #include <time.h>   
-#include <stdio.h>  // Necessário para sprintf
+#include <stdio.h>
 
-// Variáveis Estáticas (traduzidas)
+//Variáveis
 static Texture2D texturaChao;
 static Texture2D texturaIndestrutivel;
 static Texture2D texturaDestrutivel;
 static TipoTile gradeMapa[ALTURA_GRADE_MAPA][LARGURA_GRADE_MAPA];
 
-// Recebe o nome da pasta (ex: "Default" ou "Cave")
+//Recebe o nome da pasta (Default, Cave)
 void InicializarMapa(const char* nomeTema)
 {
-    // Inicialização do gerador de números aleatórios
+    //Inicia o gerador aleatório
     srand(time(NULL)); 
 
     char bufferCaminho[256]; 
 
-    // Constrói os caminhos baseados na pasta recebida
+    //Constrói os caminhos baseados na pasta recebida
     sprintf(bufferCaminho, "%s/ground.png", nomeTema);
     texturaChao = LoadTexture(bufferCaminho);
 
@@ -27,7 +27,6 @@ void InicializarMapa(const char* nomeTema)
     sprintf(bufferCaminho, "%s/wallb.png", nomeTema);
     texturaDestrutivel = LoadTexture(bufferCaminho); 
 
-    // Logs de erro (usando a regra !x -> x == 0)
     if (texturaChao.id == 0) {
         TraceLog(LOG_WARNING, "Falha ao carregar %s/ground.png", nomeTema);
     }
@@ -38,17 +37,17 @@ void InicializarMapa(const char* nomeTema)
         TraceLog(LOG_WARNING, "Falha ao carregar %s/wallb.png", nomeTema);
     }
 
-    // Geração do layout
+    //Geração do layout com matriz
     for (int y = 0; y < ALTURA_GRADE_MAPA; y++) {
         for (int x = 0; x < LARGURA_GRADE_MAPA; x++) {
             if (y == 0 || y == ALTURA_GRADE_MAPA - 1 || x == 0 || x == LARGURA_GRADE_MAPA - 1) {
-                // Bordas
+                //Bordas
                 gradeMapa[y][x] = TILE_INDESTRUTIVEL;
             } else if (y % 2 == 0 && x % 2 == 0) {
-                // Pilares centrais fixos
+                //Blocos do meio (xadrez)
                 gradeMapa[y][x] = TILE_INDESTRUTIVEL;
             } else {
-                // Posição vazia inicial
+                //Posição vazia inicial
                 gradeMapa[y][x] = TILE_VAZIO;
             }
         }
@@ -89,7 +88,6 @@ void DesenharMapa(void)
                     DrawTexturePro(texturaIndestrutivel, srcInd, destRec, origem, 0.0f, WHITE);
                     break;
                 case TILE_DESTRUTIVEL:
-                    // Verificação !x -> x == 0
                     if (texturaDestrutivel.id > 0) { 
                         DrawTexturePro(texturaDestrutivel, srcDest, destRec, origem, 0.0f, WHITE);
                     } else { 
@@ -124,8 +122,6 @@ void DefinirTipoTile(int x, int y, TipoTile novoTipo) {
 }
 
 Vector2 ObterPosicaoInicialJogador(int indiceJogador) {
-    // Uso do if/else if em vez do switch/case para aderir estritamente às regras,
-    // embora o switch/case seja geralmente mais limpo aqui.
     if (indiceJogador == 0) {
         return (Vector2){1 * TAMANHO_TILE, 1 * TAMANHO_TILE}; 
     } else if (indiceJogador == 1) {
@@ -135,7 +131,7 @@ Vector2 ObterPosicaoInicialJogador(int indiceJogador) {
     } else if (indiceJogador == 3) {
         return (Vector2){(LARGURA_GRADE_MAPA - 2) * TAMANHO_TILE, (ALTURA_GRADE_MAPA - 2) * TAMANHO_TILE}; 
     } else {
-        // Caso padrão (default)
+        // Caso padrão
         return (Vector2){1 * TAMANHO_TILE, 1 * TAMANHO_TILE};
     }
 }

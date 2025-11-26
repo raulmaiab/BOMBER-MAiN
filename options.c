@@ -4,7 +4,7 @@
 #include <string.h>
 
 static void DesenharTextoBrilho(const char* texto, Vector2 pos, float tamanho, Color base, Color brilho) {
-    const int o = 2; // Offset do brilho
+    const int o = 2; //Offset do brilho
     DrawText(texto, (int)(pos.x - o), (int)pos.y, (int)tamanho, brilho);
     DrawText(texto, (int)(pos.x + o), (int)pos.y, (int)tamanho, brilho);
     DrawText(texto, (int)pos.x, (int)(pos.y - o), (int)tamanho, brilho);
