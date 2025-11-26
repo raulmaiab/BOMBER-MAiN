@@ -44,7 +44,9 @@ Tudo foi desenvolvido na mão, usando apenas:
 Abaixo está o passo a passo completo para baixar, compilar e rodar o jogo em sua máquina.
 
 
+
 📥 **1. Baixar o Repositório**
+
 
 ✔️ Opção 1 — Clonar via Git
 git clone https://github.com/raulmaiab/BOMBER-MAiN
@@ -64,6 +66,7 @@ cd BOMBER-MAiN
 
 
 📚 **2. Instalar a Raylib**
+
 
 🔵 Linux (Debian/Ubuntu):
 sudo apt install libraylib-dev
