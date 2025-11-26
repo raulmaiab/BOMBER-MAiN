@@ -1,2 +1,136 @@
-# BOMBER-MAiN
-Jogo baseado no famoso jogo bomberman, para projeto da cadeira de Programação Imperativa e Funcional (PIF)
+# 💣 BOMBERMAIN
+
+Um jogo inspirado em Bomberman, desenvolvido totalmente em C + Raylib para o projeto da cadeira de PIF da CESAR School.
+
+## 🎮 Sobre o Jogo
+
+O **_BomberMain_** é um jogo estilo grid-based onde você controla um personagem capaz de posicionar bombas, destruir blocos, avançar em fases e navegar por diferentes menus e modos de jogo.
+
+Tudo foi desenvolvido na mão, usando apenas:
+
+- Lógica em C
+
+- Renderização com raylib
+
+- Sprites 2D
+
+- Menus criados pela equipe
+
+- Telas de vitória/derrota
+
+- Sistema de história e batalha
+
+---
+## 🧩 Funcionalidades Principais
+
+👤 Controle total do personagem
+
+💣 Colocação e gerenciamento de bombas
+
+💥 Explosão com física e colisão
+
+🧱 Mapa destrutível
+
+🧭 Múltiplos menus (início, história, batalha, vitória, derrota, opções)
+
+🎨 Tela inicial programática (neon)
+
+☑️ Estrutura modular em C
+
+---
+## ⚙️ Como Instalar e Jogar
+
+Abaixo está o passo a passo completo para baixar, compilar e rodar o jogo em sua máquina.
+
+📥 1. Baixar o Repositório
+
+✔️ Opção 1 — Clonar via Git
+git clone https://github.com/raulmaiab/BOMBER-MAiN
+cd BOMBER-MAiN
+
+✔️ Opção 2 — Baixar ZIP
+
+- Abra o repositório no GitHub
+
+- Clique no botão verde Code
+
+- Clique em Download ZIP
+
+- Extraia numa pasta
+
+- Abra a pasta no VSCode
+
+📚 2. Instalar a Raylib
+🔵 Linux (Debian/Ubuntu):
+sudo apt install libraylib-dev
+
+🟣 Windows (MSYS2 + MinGW):
+pacman -S mingw-w64-ucrt-x86_64-raylib
+
+
+Abra o terminal MSYS2 UCRT64 para compilar corretamente no Windows.
+
+🧱 3. Compilar o Jogo
+
+No terminal, dentro da pasta do projeto, execute:
+
+gcc bombermain.c inicio.c menu.c menu_battle.c mapa.c jogador.c bomba.c explosao.c extras.c derrota.c vitoria.c menu_story.c options.c menu_prox.c vitoria_battle.c historico.c -o BomberMain $(pkg-config --cflags --libs raylib)
+
+
+Se tudo correr bem, isso irá gerar o executável:
+
+./BomberMain
+
+▶️ 4. Rodar o Jogo
+Linux:
+./BomberMain
+
+Windows:
+./BomberMain.exe
+
+🖥️ Requisitos Mínimos
+
+CPU dual-core
+
+2GB RAM
+
+Placa com OpenGL 3.3+
+
+Raylib instalada corretamente
+
+VSCode recomendado
+
+
+🤝 Como Contribuir
+
+Contribuições são bem-vindas!
+Siga o fluxo:
+
+Faça um fork do repositório
+
+Crie sua branch
+
+Commit suas mudanças
+
+Abra um Pull Request
+
+🕹️ Controles do Jogo
+Ação	Tecla
+Mover	WASD ou Setas
+Colocar bomba	Espaço
+Confirmar	Enter
+Sair/Tela cheia	ESC / F11
+👨‍💻 Autores do Projeto
+
+Guilherme Silvestre
+
+Raul Maia
+
+Matheus Fialho
+
+Diego Magnata
+
+⭐ Deixe uma Estrela!
+
+Se curtiu o projeto, deixe uma ⭐ no GitHub!
+Isso ajuda muito e fortalece o trabalho do grupo.
