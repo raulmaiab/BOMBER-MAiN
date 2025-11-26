@@ -73,9 +73,11 @@ sudo apt install libraylib-dev
 
 🟣 Windows (MSYS2 + MinGW):
 pacman -S mingw-w64-ucrt-x86_64-raylib
-
-
 Abra o terminal MSYS2 UCRT64 para compilar corretamente no Windows.
+
+🟠 macOs (HomeBrew):
+brew install raylib
+brew install pkg-config
 
 
 🧱 **3. Compilar o Jogo**
