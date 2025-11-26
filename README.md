@@ -92,7 +92,7 @@ Se tudo correr bem, isso irá gerar o executável:
 
 ▶️ **4. Rodar o Jogo**
 
-Linux:
+Linux/MacOs:
 ./BomberMain
 
 Windows:
