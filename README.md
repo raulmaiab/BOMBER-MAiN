@@ -131,7 +131,7 @@ Siga o fluxo:
 
 Mover:	WASD ou Setas
 
-Colocar bomba: Espaço
+Colocar bomba: Espaço ou J
 
 Confirmar:	Enter
 
