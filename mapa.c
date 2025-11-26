@@ -53,7 +53,7 @@ void InicializarMapa(const char* nomeTema)
         }
     }
     
-    // Distribuição de blocos destrutíveis
+    //Distribuição de blocos destrutíveis (aleatoriedade)
     for (int y = 1; y < ALTURA_GRADE_MAPA - 1; y++) {
         for (int x = 1; x < LARGURA_GRADE_MAPA - 1; x++) {
             if (gradeMapa[y][x] == TILE_VAZIO) {
@@ -64,7 +64,7 @@ void InicializarMapa(const char* nomeTema)
         }
     }
 
-    // Limpa posições iniciais (3x3 ao redor dos cantos)
+    //Limpa posições iniciais 
     gradeMapa[1][1] = TILE_VAZIO; gradeMapa[1][2] = TILE_VAZIO; gradeMapa[2][1] = TILE_VAZIO;
     gradeMapa[1][LARGURA_GRADE_MAPA - 2] = TILE_VAZIO; gradeMapa[1][LARGURA_GRADE_MAPA - 3] = TILE_VAZIO; gradeMapa[2][LARGURA_GRADE_MAPA - 2] = TILE_VAZIO;
     gradeMapa[ALTURA_GRADE_MAPA - 2][1] = TILE_VAZIO; gradeMapa[ALTURA_GRADE_MAPA - 2][2] = TILE_VAZIO; gradeMapa[ALTURA_GRADE_MAPA - 3][1] = TILE_VAZIO;

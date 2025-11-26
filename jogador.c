@@ -8,7 +8,7 @@
 #include <float.h> 
 #include <stdlib.h> 
 #include <string.h> 
-#include <math.h> // Para fabs()
+#include <math.h>
 
 #define MARGEM_COLISAO 4.0f 
 #define TEMPO_RECARGA_BOMBA 2.5f 
@@ -546,7 +546,7 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
                 break;
             }
 
-            // --- ESPERANDO (HOLDING) ---
+            //Robô esperando o tempo da bomba
             case BOT_ESTADO_ESPERANDO:
             {
                 j->direcaoMovimentoBot = 4; 
@@ -560,8 +560,7 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
             }
         }
 
-        // --- CONFIGURAÇÃO DE MOVIMENTO ---
-        // Em FUGINDO, o bot ignora colisão com bombas para não travar
+        // Em FUGINDO, o robô ignora a colisão da bomba pra não travar e morrer
         bool ignorarBombas;
         if (j->estadoBot == BOT_ESTADO_FUGINDO) {
             ignorarBombas = true;
@@ -579,7 +578,7 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
             case 4: j->frameAtual = 0; break; 
         }
     }
-    // --- LÓGICA HUMANA ---
+    //Lógica pro robô
     else
     {
         float dx = 0.0f, dy = 0.0f;
@@ -633,7 +632,7 @@ void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquer
 }
 
 
-// --- DesenharJogador 
+//Desenhar jogador 
 void DesenharJogador(const Jogador* j)
 {
     if (j->vivo == false) {
@@ -669,7 +668,7 @@ void DesenharJogador(const Jogador* j)
     DrawTexturePro(texDesenhar, recFonte, recDestino, origem, 0.0f, matiz);
 }
 
-// --- DestruirJogador 
+//Matar jogador se ele explodir 
 void DestruirJogador(Jogador* j)
 {
     UnloadTexture(j->texParado);
@@ -677,7 +676,7 @@ void DestruirJogador(Jogador* j)
         if (j->texCima[i].id > 0 && j->texCima[i].id != j->texParado.id) {
             UnloadTexture(j->texCima[i]);
         }
-        // Nota: j->texBaixo[i] usa j->texParado, então a verificação deve ignorar se for a mesma ID
+        //j->texBaixo[i] usa j->texParado, então a verificação deve ignorar se for a mesma ID
         if (j->texBaixo[i].id > 0 && j->texBaixo[i].id != j->texParado.id) {
             UnloadTexture(j->texBaixo[i]);
         }

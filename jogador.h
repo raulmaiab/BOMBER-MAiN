@@ -5,14 +5,14 @@
 #include <stdbool.h>
 #include "bomba.h" 
 
-// --- Estados da IA ---
+//Movimentos dos robôs
 typedef enum {
-    BOT_ESTADO_VAGANDO,    // BOT_STATE_WANDERING
-    BOT_ESTADO_FUGINDO,    // BOT_STATE_FLEEING
-    BOT_ESTADO_ESPERANDO   // BOT_STATE_HOLDING
+    BOT_ESTADO_VAGANDO,  
+    BOT_ESTADO_FUGINDO,    
+    BOT_ESTADO_ESPERANDO   
 } EstadoBot;
 
-// --- Constantes ---
+//Constantes
 #define NUM_FRAMES_ANDAR 3 
 #define VELOCIDADE_FRAME_ANIMACAO 0.15f 
 #define COMPRIMENTO_MAX_NOME_SPRITE 16 
@@ -24,7 +24,7 @@ typedef struct Jogador
     Vector2 pos;       
     float velocidade;  
     
-    // Texturas
+    //Pngs
     Texture2D texParado; 
     Texture2D texCima[NUM_FRAMES_ANDAR];
     Texture2D texBaixo[NUM_FRAMES_ANDAR];
@@ -38,7 +38,7 @@ typedef struct Jogador
     
     char nomeSprite[COMPRIMENTO_MAX_NOME_SPRITE]; 
     
-    // Variáveis do Bot
+    //Variáveis de robô
     bool ehBot;
     EstadoBot estadoBot;      
     float temporizadorEstadoBot;    
@@ -47,7 +47,7 @@ typedef struct Jogador
     
     float recargaBomba; 
     
-    //Atributos de Power-ups (Extras) ---
+    //Atribuindo a possibilidade de powerups
     int alcanceBomba;          
     
     bool temDefesa;         
@@ -58,19 +58,16 @@ typedef struct Jogador
 
     int limiteBombas;          
     int bombasAtivas;       
-    // ---------------------------------------------
-    
+
 } Jogador;
 
-// Assinaturas (Traduzidas)
+//Assinaturas (Traduzidas)
 Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot);
 
-// Atualizar recebe os alvos para a IA
-void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquerda, int teclaDireita, int teclaBomba, 
-                      NodeBombas *gBombas, float deltaTime, 
-                      Jogador* alvoHumano1, Jogador* alvoHumano2);
+//Atualizar recebe os alvos para a IA
+void AtualizarJogador(Jogador* j, int teclaCima, int teclaBaixo, int teclaEsquerda, int teclaDireita, int teclaBomba,  NodeBombas *gBombas, float deltaTime, Jogador* alvoHumano1, Jogador* alvoHumano2);
 
 void DesenharJogador(const Jogador* j);
 void DestruirJogador(Jogador* j);
 
-#endif // JOGADOR_H
+#endif
