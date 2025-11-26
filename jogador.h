@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include "bomba.h" 
 
-//Movimentos dos robôs
+//Enum dos estados dos robôs
 typedef enum {
     BOT_ESTADO_VAGANDO,  
     BOT_ESTADO_FUGINDO,    
@@ -19,6 +19,7 @@ typedef enum {
 
 typedef enum { DIR_CIMA=0, DIR_BAIXO, DIR_ESQUERDA, DIR_DIREITA, DIR_PARADO } DirecaoAnimacao;
 
+//Definição completa de um jogador,
 typedef struct Jogador
 {
     Vector2 pos;       
@@ -61,7 +62,7 @@ typedef struct Jogador
 
 } Jogador;
 
-//Assinaturas (Traduzidas)
+//Operações básicas
 Jogador CriarJogador(Vector2 posInicial, const char* pastaSprites, bool ehBot);
 
 //Atualizar recebe os alvos para a IA
