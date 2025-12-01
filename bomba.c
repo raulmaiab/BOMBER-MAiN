@@ -9,6 +9,7 @@
 #define VELOCIDADE_PISCAR_BOMBA 0.2f 
 #define TEMPO_INICIO_PISCAR_BOMBA 1.0f 
 
+
 //Função que cria o cabeçalho da lista encadeada
 NodeBombas CriarNodeBombas(void) {
     NodeBombas g;
